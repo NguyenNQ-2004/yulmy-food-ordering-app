@@ -44,6 +44,45 @@ export function AuthProvider({ children }) {
     await AsyncStorage.removeItem('token');
   };
 
+  const register = async (fullName, email, password, phone) => {
+    try {
+      const response = await api.post('/auth/register', {
+        fullName,
+        email,
+        password,
+        phone,
+      });
+      return {
+        success: true,
+        message: response.data.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || 'Registration failed. Please try again.',
+      };
+    }
+  };
+
+  const resetPassword = async (email) => {
+    try {
+      const response = await api.post('/auth/reset-password', {
+        email,
+      });
+      return {
+        success: true,
+        message: response.data.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || 'Password reset failed. Please try again.',
+      };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -51,6 +90,8 @@ export function AuthProvider({ children }) {
         token,
         login,
         logout,
+        register,
+        resetPassword,
       }}
     >
       {children}
