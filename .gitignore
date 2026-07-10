@@ -1,0 +1,9 @@
+node_modules/
+.env
+
+# Excluded by user
+frontend/mobile-app/.claude
+.codegraph
+.claude
+.agents
+skills-lock.json

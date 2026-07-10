@@ -2,6 +2,12 @@ const mongoose = require('mongoose');
 
 const restaurantSchema = new mongoose.Schema(
   {
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+
     name: {
       type: String,
       required: true,
@@ -19,6 +25,21 @@ const restaurantSchema = new mongoose.Schema(
     },
 
     image: {
+      type: String,
+      default: '',
+    },
+
+    phone: {
+      type: String,
+      default: '',
+    },
+
+    hours: {
+      type: String,
+      default: '09:00 AM - 10:00 PM',
+    },
+
+    description: {
       type: String,
       default: '',
     },

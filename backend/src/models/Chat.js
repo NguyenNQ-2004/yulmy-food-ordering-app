@@ -8,15 +8,21 @@ const chatSchema = new mongoose.Schema(
       required: true,
     },
 
-    admin: {
+    owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      default: null,
+      required: true,
     },
 
     restaurant: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Restaurant',
+      default: null,
+    },
+
+    admin: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
       default: null,
     },
 

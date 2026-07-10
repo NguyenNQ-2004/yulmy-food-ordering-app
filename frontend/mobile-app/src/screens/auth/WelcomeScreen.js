@@ -1,40 +1,103 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+  Image,
+  Platform,
+} from 'react-native';
 
 const RED = '#B11226';
 const LIGHT_RED = '#f0d9db';
 
+const SLIDES = [
+  {
+    title: 'Discover restaurants and dishes',
+    subtitle: 'Explore a curated selection of culinary experiences, from hidden gems to renowned establishments, tailored to your palate.',
+    image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80',
+  },
+  {
+    title: 'Easy ordering and secure payment',
+    subtitle: 'Experience seamless checkout with encrypted transactions for your peace of mind.',
+    image: 'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?w=600&auto=format&fit=crop&q=80',
+  },
+  {
+    title: 'Smart AI food recommendations',
+    subtitle: 'Let our intelligent assistant curate the perfect dining experience tailored to your unique tastes and cravings.',
+    image: 'https://images.unsplash.com/photo-1531747118685-ca8fa6e08806?w=600&auto=format&fit=crop&q=80',
+  }
+];
+
 export default function WelcomeScreen({ navigation }) {
+  const [activeStep, setActiveStep] = useState(0);
+
+  const handleNext = () => {
+    if (activeStep < SLIDES.length - 1) {
+      setActiveStep(activeStep + 1);
+    } else {
+      navigation.navigate('Login');
+    }
+  };
+
+  const currentSlide = SLIDES[activeStep];
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header Row with Logo and Skip */}
       <View style={styles.header}>
+        <View style={styles.headerSpacer} />
         <Text style={styles.logoText}>Epicurean</Text>
+        {activeStep < SLIDES.length - 1 ? (
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Login')}
+            style={styles.skipBtn}
+          >
+            <Text style={styles.skipText}>SKIP</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerSpacer} />
+        )}
       </View>
 
+      {/* Onboarding Image */}
       <View style={styles.imageContainer}>
-        {/* Placeholder for the AI Robot image */}
-        <View style={styles.imagePlaceholder}>
-           <Text style={styles.placeholderText}>AI Robot Image</Text>
-        </View>
+        <Image 
+          source={{ uri: currentSlide.image }} 
+          style={styles.slideImage} 
+          resizeMode="cover"
+        />
       </View>
       
+      {/* Text & Navigation */}
       <View style={styles.contentContainer}>
-        <Text style={styles.title}>Smart AI food recommendations</Text>
-        <Text style={styles.subtitle}>
-          Let our intelligent assistant curate the perfect dining experience tailored to your unique tastes and cravings.
-        </Text>
+        <Text style={styles.title}>{currentSlide.title}</Text>
+        <Text style={styles.subtitle}>{currentSlide.subtitle}</Text>
         
+        {/* Pagination Dots (Interactive) */}
         <View style={styles.pagination}>
-          <View style={styles.dot} />
-          <View style={styles.dot} />
-          <View style={[styles.dot, styles.activeDot]} />
+          {SLIDES.map((_, idx) => {
+            const isSelected = activeStep === idx;
+            return (
+              <TouchableOpacity
+                key={idx}
+                style={[styles.dot, isSelected && styles.activeDot]}
+                onPress={() => setActiveStep(idx)}
+                activeOpacity={0.7}
+              />
+            );
+          })}
         </View>
 
+        {/* Action Button */}
         <TouchableOpacity 
           style={styles.button} 
-          onPress={() => navigation.navigate('Login')}
+          onPress={handleNext}
         >
-          <Text style={styles.buttonText}>Get Started {'\u2192'}</Text>
+          <Text style={styles.buttonText}>
+            {activeStep === SLIDES.length - 1 ? 'Get Started' : 'Next'} {'\u2192'}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -44,65 +107,73 @@ export default function WelcomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fffaf9', // Very light pink/off-white background
+    backgroundColor: '#fffaf9',
   },
   header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 20,
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'ios' ? 10 : 20,
     paddingBottom: 10,
+  },
+  headerSpacer: {
+    width: 40,
   },
   logoText: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: RED,
+    textAlign: 'center',
+  },
+  skipBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  skipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#8f6f6c',
+    letterSpacing: 1,
   },
   imageContainer: {
-    flex: 1,
+    flex: 1.2,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 30,
+    paddingHorizontal: 24,
   },
-  imagePlaceholder: {
+  slideImage: {
     width: '100%',
-    aspectRatio: 1.6,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.05,
-    shadowRadius: 20,
-    elevation: 3,
-  },
-  placeholderText: {
-    color: '#ccc',
-    fontWeight: '600',
+    aspectRatio: 1.4,
+    borderRadius: 24,
+    backgroundColor: '#ffe9e6',
   },
   contentContainer: {
-    paddingHorizontal: 30,
-    paddingBottom: 50,
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
     alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   title: {
-    fontSize: 32,
+    fontSize: 26,
     fontWeight: '800',
-    color: '#222',
+    color: '#271816',
     textAlign: 'center',
-    marginBottom: 15,
-    lineHeight: 40,
+    marginBottom: 12,
+    lineHeight: 34,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#555',
+    fontSize: 14,
+    color: '#5b403d',
     textAlign: 'center',
-    marginBottom: 40,
-    lineHeight: 24,
+    marginBottom: 24,
+    lineHeight: 22,
   },
   pagination: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 30,
   },
   dot: {
     width: 8,
@@ -118,15 +189,26 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: RED,
     width: '100%',
-    paddingVertical: 18,
-    borderRadius: 30,
+    paddingVertical: 16,
+    borderRadius: 28,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: RED,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   buttonText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '750',
   },
 });

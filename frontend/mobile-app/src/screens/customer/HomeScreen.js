@@ -8,6 +8,8 @@ import {
   ScrollView,
   TextInput,
   Alert,
+  Platform,
+  Modal,
 } from 'react-native';
 
 import { AuthContext } from '../../context/AuthContext';
@@ -33,12 +35,10 @@ export default function HomeScreen({ navigation }) {
   const { currentUser, logout } = useContext(AuthContext);
   const [cartCount, setCartCount] = useState(0);
   const [activeCategory, setActiveCategory] = useState('★ Featured');
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: logout },
-    ]);
+    setShowLogoutModal(true);
   };
 
   const handleAddToCart = (item) => {
@@ -177,6 +177,40 @@ export default function HomeScreen({ navigation }) {
            <Text style={styles.navLabel}>Profile</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Custom Logout Confirmation Modal */}
+      <Modal
+        visible={showLogoutModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowLogoutModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Confirm Logout</Text>
+            <Text style={styles.modalMessage}>Are you sure you want to log out of Epicurean?</Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.cancelModalButton]} 
+                onPress={() => setShowLogoutModal(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.cancelModalText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.confirmModalButton]} 
+                onPress={() => {
+                  setShowLogoutModal(false);
+                  logout();
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.confirmModalText}>Log Out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -358,11 +392,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+      },
+      android: {
+        elevation: 2,
+      },
+      default: {
+        boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.05)',
+      },
+    }),
     marginBottom: 10,
   },
   restaurantImagePlaceholder: {
@@ -380,11 +423,20 @@ const styles = StyleSheet.create({
     height: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+      default: {
+        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+      },
+    }),
   },
   restaurantInfo: {
     padding: 12,
@@ -415,11 +467,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+      },
+      android: {
+        elevation: 2,
+      },
+      default: {
+        boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.05)',
+      },
+    }),
   },
   recommendedImagePlaceholder: {
     height: 120,
@@ -490,5 +551,76 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#999',
     fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(39, 24, 22, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '85%',
+    maxWidth: 380,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+      default: {
+        boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
+      },
+    }),
+  },
+  modalTitle: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: '#271816',
+    marginBottom: 8,
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: '#5b403d',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cancelModalButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#f0e5e3',
+  },
+  confirmModalButton: {
+    backgroundColor: RED,
+  },
+  cancelModalText: {
+    color: '#8f6f6c',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  confirmModalText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });
