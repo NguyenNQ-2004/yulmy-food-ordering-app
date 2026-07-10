@@ -1,5 +1,7 @@
 import React, { createContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Alert, Platform } from 'react-native';
+
 import api from '../services/api';
 
 export const AuthContext = createContext();
@@ -7,6 +9,16 @@ export const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [token, setToken] = useState(null);
+
+  const persistUserSession = async (userData, userToken = token) => {
+    setCurrentUser(userData);
+
+    if (userToken) {
+      await AsyncStorage.setItem('token', userToken);
+    }
+
+    await AsyncStorage.setItem('user', JSON.stringify(userData));
+  };
 
   useEffect(() => {
     const restoreSession = async () => {
@@ -64,6 +76,24 @@ export function AuthProvider({ children }) {
     await AsyncStorage.removeItem('token');
   };
 
+  const confirmLogout = (message = 'Do you want to logout?') => {
+    if (Platform.OS === 'web') {
+      const confirmed =
+        typeof window === 'undefined' ? true : window.confirm(message);
+
+      if (confirmed) {
+        logout();
+      }
+
+      return;
+    }
+
+    Alert.alert('Logout', message, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Logout', style: 'destructive', onPress: logout },
+    ]);
+  };
+
   const register = async (fullName, email, password, phone) => {
     try {
       const response = await api.post('/auth/register', {
@@ -103,6 +133,64 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const refreshCurrentUser = async () => {
+    try {
+      const response = await api.get('/auth/me');
+      const userData = response.data.data;
+      await persistUserSession(userData);
+
+      return {
+        success: true,
+        data: userData,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || 'Failed to refresh account information.',
+      };
+    }
+  };
+
+  const updatePreferences = async (payload) => {
+    try {
+      const response = await api.patch('/auth/preferences', payload);
+      const userData = response.data.data;
+      await persistUserSession(userData);
+
+      return {
+        success: true,
+        data: userData,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || 'Failed to update preferences.',
+      };
+    }
+  };
+
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      const response = await api.post('/auth/change-password', {
+        currentPassword,
+        newPassword,
+      });
+
+      return {
+        success: true,
+        message: response.data.message || 'Password updated successfully.',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || 'Failed to change password.',
+      };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -110,8 +198,12 @@ export function AuthProvider({ children }) {
         token,
         login,
         logout,
+        confirmLogout,
         register,
         resetPassword,
+        refreshCurrentUser,
+        updatePreferences,
+        changePassword,
       }}
     >
       {children}
