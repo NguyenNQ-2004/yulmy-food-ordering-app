@@ -21,10 +21,6 @@ const MUTED = '#6d3f3f';
 const FILTERS = ['All Vouchers', 'Delivery', 'Discount'];
 
 function formatMoney(value) {
-  if (value >= 1000) {
-    return `${Math.round(value).toLocaleString('vi-VN')} VND`;
-  }
-
   return `$${value.toFixed(2)}`;
 }
 
@@ -114,17 +110,17 @@ export default function VoucherScreen({ navigation, route }) {
     try {
       const result = await validateVoucher(voucher.code, itemsAmount);
 
-      navigation.navigate(
-        'Cart',
-        {
+      navigation.navigate({
+        name: 'Cart',
+        params: {
           selectedVoucher: {
             code: result.voucher.code,
             title: result.voucher.title,
             discountAmount: result.discountAmount,
           },
         },
-        { merge: true }
-      );
+        merge: true,
+      });
     } catch (error) {
       Alert.alert(
         'Voucher unavailable',

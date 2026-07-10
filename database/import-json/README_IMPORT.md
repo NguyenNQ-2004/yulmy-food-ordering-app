@@ -26,7 +26,7 @@ Chay tai root project:
 mongoimport --db yulmy_db --collection users --file database/import-json/users.json --jsonArray
 mongoimport --db yulmy_db --collection restaurants --file database/import-json/restaurants.json --jsonArray
 mongoimport --db yulmy_db --collection foods --file database/import-json/foods.json --jsonArray
-mongoimport --db yulmy_db --collection vouchers --file database/import-json/vouchers.json --jsonArray
+mongoimport --db yulmy_db --collection vouchers --file database/import-json/vouchers.json --jsonArray --mode upsert --upsertFields code
 mongoimport --db yulmy_db --collection carts --file database/import-json/carts.json --jsonArray
 mongoimport --db yulmy_db --collection orders --file database/import-json/orders.json --jsonArray
 mongoimport --db yulmy_db --collection orderitems --file database/import-json/orderitems.json --jsonArray

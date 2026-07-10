@@ -17,6 +17,14 @@ import {
   updateCartItem,
   validateVoucher,
 } from '../../services/customerOrderApi';
+import {
+  clearLocalCartItems,
+  clearLocalCartVoucher,
+  loadLocalCartItems,
+  loadLocalCartVoucher,
+  saveLocalCartItems,
+  saveLocalCartVoucher,
+} from '../../services/localCartStorage';
 
 const RED = '#B11226';
 const DARK_RED = '#980F20';
@@ -25,10 +33,6 @@ const MUTED = '#7a5d5d';
 const BORDER = '#f3d6d3';
 
 function formatMoney(value) {
-  if (value >= 1000) {
-    return `${Math.round(value).toLocaleString('vi-VN')} VND`;
-  }
-
   return `$${value.toFixed(2)}`;
 }
 
@@ -76,12 +80,17 @@ export default function CartScreen({ navigation, route }) {
   const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   const [cartError, setCartError] = useState('');
   const [pendingRemoveItem, setPendingRemoveItem] = useState(null);
+  const localCartItems = route?.params?.localCartItems || [];
+  const localRestaurantName = route?.params?.localRestaurantName || 'Epicurean';
+  const selectedVoucherParam = route?.params?.selectedVoucher;
 
   const loadCart = useCallback(async () => {
     setIsLoadingCart(true);
     setCartError('');
 
     try {
+      const storedItems = await loadLocalCartItems();
+      const storedVoucher = await loadLocalCartVoucher();
       const cart = await getMyCart();
       const normalizedCart = normalizeCart(cart);
 
@@ -89,22 +98,34 @@ export default function CartScreen({ navigation, route }) {
         setItems(normalizedCart.items);
         setRestaurantName(normalizedCart.restaurantName);
         setIsBackendCart(true);
+        if (!selectedVoucherParam) {
+          setAppliedVoucher(storedVoucher);
+          setPromoCode(storedVoucher?.code || '');
+        }
       } else {
         setItems([]);
         setRestaurantName('Restaurant');
-        setIsBackendCart(true);
+        setIsBackendCart(false);
         setAppliedVoucher(null);
         setPromoCode('');
+        await clearLocalCartItems();
+        await clearLocalCartVoucher();
       }
     } catch (error) {
-      setCartError(
-        error.response?.data?.message || 'Cart API is unavailable.'
-      );
+      const storedItems = await loadLocalCartItems();
+      const storedVoucher = await loadLocalCartVoucher();
+      const fallbackItems = storedItems.length > 0 ? storedItems : localCartItems;
+
+      setCartError(fallbackItems.length === 0 ? error.response?.data?.message || 'Cart API is unavailable.' : '');
+      setItems(fallbackItems);
+      setRestaurantName(fallbackItems[0]?.restaurant || localRestaurantName);
+      setAppliedVoucher(fallbackItems.length > 0 ? storedVoucher : null);
+      setPromoCode(fallbackItems.length > 0 ? storedVoucher?.code || '' : '');
       setIsBackendCart(false);
     } finally {
       setIsLoadingCart(false);
     }
-  }, []);
+  }, [localCartItems, localRestaurantName, selectedVoucherParam]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', loadCart);
@@ -112,10 +133,39 @@ export default function CartScreen({ navigation, route }) {
     return unsubscribe;
   }, [loadCart, navigation]);
 
+  useEffect(() => {
+    if (localCartItems.length > 0 && !isBackendCart) {
+      setItems(localCartItems);
+      setRestaurantName(localCartItems[0]?.restaurant || localRestaurantName);
+    }
+  }, [isBackendCart, localCartItems, localRestaurantName]);
+
+  useEffect(() => {
+    if (isBackendCart) {
+      return;
+    }
+
+    if (items.length > 0) {
+      saveLocalCartItems(items).catch(() => {});
+      return;
+    }
+
+    clearLocalCartItems().catch(() => {});
+  }, [isBackendCart, items]);
+
+  useEffect(() => {
+    if (appliedVoucher) {
+      saveLocalCartVoucher(appliedVoucher).catch(() => {});
+      return;
+    }
+
+    clearLocalCartVoucher().catch(() => {});
+  }, [appliedVoucher]);
+
   const totals = useMemo(() => {
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const deliveryFee = subtotal > 0 ? (subtotal >= 1000 ? 15000 : 4.99) : 0;
-    const serviceFee = subtotal > 0 ? (subtotal >= 1000 ? 0 : 2.18) : 0;
+    const deliveryFee = subtotal > 0 ? 1.5 : 0;
+    const serviceFee = subtotal > 0 ? 0.99 : 0;
     const discount = appliedVoucher?.discountAmount || 0;
     const total = Math.max(subtotal + deliveryFee + serviceFee - discount, 0);
 
@@ -130,7 +180,7 @@ export default function CartScreen({ navigation, route }) {
   }, [items, appliedVoucher]);
 
   useEffect(() => {
-    const selectedVoucher = route?.params?.selectedVoucher;
+    const selectedVoucher = selectedVoucherParam;
 
     if (!selectedVoucher) {
       return;
@@ -139,7 +189,7 @@ export default function CartScreen({ navigation, route }) {
     setAppliedVoucher(selectedVoucher);
     setPromoCode(selectedVoucher.code);
     navigation.setParams({ selectedVoucher: undefined });
-  }, [navigation, route?.params?.selectedVoucher]);
+  }, [navigation, selectedVoucherParam]);
 
   const updateQuantityDirectly = async (itemId, change) => {
     const currentItem = items.find((item) => item.id === itemId);
@@ -167,19 +217,21 @@ export default function CartScreen({ navigation, route }) {
       }
 
       setAppliedVoucher(null);
+      setPromoCode('');
       return;
     }
 
-    setItems((currentItems) =>
-      currentItems
+    const nextItems = items
         .map((item) =>
           item.id === itemId
             ? { ...item, quantity: Math.max(item.quantity + change, 0) }
             : item
         )
-        .filter((item) => item.quantity > 0)
-    );
+        .filter((item) => item.quantity > 0);
+
+    setItems(nextItems);
     setAppliedVoucher(null);
+    setPromoCode('');
   };
 
   const updateQuantity = (itemId, change) => {
