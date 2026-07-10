@@ -115,7 +115,7 @@ const checkout = async (req, res) => {
       note = '',
       paymentMethod = 'COD',
       voucherCode = '',
-      deliveryFee = 15000,
+      deliveryFee = 1.5,
     } = req.body;
 
     if (!receiverName || !deliveryAddress || !phone) {

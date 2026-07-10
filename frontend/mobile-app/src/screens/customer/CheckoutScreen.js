@@ -64,10 +64,6 @@ const DEFAULT_PAYMENT_METHOD = {
 };
 
 function formatMoney(value) {
-  if (value >= 1000) {
-    return `${Math.round(value).toLocaleString('vi-VN')} đ`;
-  }
-
   return `$${value.toFixed(2)}`;
 }
 
@@ -79,7 +75,7 @@ export default function CheckoutScreen({ navigation, route }) {
 
   const cartData = route?.params?.cart;
   const orderItems = cartData?.items?.length ? cartData.items : ORDER_ITEMS;
-  const deliveryFee = cartData?.totals?.deliveryFee ?? 15000;
+  const deliveryFee = cartData?.totals?.deliveryFee ?? 1.5;
 
   useEffect(() => {
     let isMounted = true;

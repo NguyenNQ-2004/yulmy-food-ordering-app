@@ -99,10 +99,6 @@ const EMPTY_CARD_FORM = {
 };
 
 function formatMoney(value) {
-  if (value >= 1000) {
-    return `${Math.round(value).toLocaleString('vi-VN')} đ`;
-  }
-
   return `$${value.toFixed(2)}`;
 }
 
