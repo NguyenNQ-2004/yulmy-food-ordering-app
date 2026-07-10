@@ -78,6 +78,14 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
+      <TouchableOpacity style={styles.cartButton} onPress={() => navigation.navigate('Cart')}>
+        <Text style={styles.cartText}>Open Cart</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+        <Text style={styles.logoutText}>Logout</Text>
+      </TouchableOpacity>
+    </View>
         <View style={styles.searchBar}>
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput 
@@ -177,7 +185,7 @@ export default function HomeScreen({ navigation }) {
            <Text style={styles.navLabel}>Profile</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </SafeAreaView >
   );
 }
 
@@ -404,91 +412,106 @@ const styles = StyleSheet.create({
     color: '#444',
     fontWeight: '600',
   },
-  recommendedGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 15,
-    justifyContent: 'space-between',
-  },
-  recommendedCard: {
-    width: '47%',
-    backgroundColor: '#fff',
+  cartButton: {
+    borderWidth: 1,
+    borderColor: RED,
+    padding: 14,
     borderRadius: 12,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
+    marginTop: 6,
   },
-  recommendedImagePlaceholder: {
-    height: 120,
-    backgroundColor: '#eee',
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-  },
-  recommendedInfo: {
-    padding: 12,
-  },
-  recommendedName: {
-    fontSize: 15,
+  cartText: {
+    color: RED,
+    textAlign: 'center',
     fontWeight: 'bold',
-    marginBottom: 4,
-    minHeight: 40,
   },
-  recommendedRest: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 10,
-  },
-  recommendedBottom: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  recommendedPrice: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#222',
-  },
-  addButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: RED,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addButtonText: {
+  logoutText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: -2,
-  },
-  bottomNav: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    paddingVertical: 10,
-    paddingBottom: 25,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  navIcon: {
-    fontSize: 22,
-    color: '#999',
-    marginBottom: 4,
-  },
-  navLabel: {
-    fontSize: 10,
-    color: '#999',
-    fontWeight: '600',
-  },
-});
+    textAlign: 'center',
+    recommendedGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      paddingHorizontal: 15,
+      justifyContent: 'space-between',
+    },
+    recommendedCard: {
+      width: '47%',
+      backgroundColor: '#fff',
+      borderRadius: 12,
+      marginBottom: 15,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 5,
+      elevation: 2,
+    },
+    recommendedImagePlaceholder: {
+      height: 120,
+      backgroundColor: '#eee',
+      borderTopLeftRadius: 12,
+      borderTopRightRadius: 12,
+    },
+    recommendedInfo: {
+      padding: 12,
+    },
+    recommendedName: {
+      fontSize: 15,
+      fontWeight: 'bold',
+      marginBottom: 4,
+      minHeight: 40,
+    },
+    recommendedRest: {
+      fontSize: 12,
+      color: '#666',
+      marginBottom: 10,
+    },
+    recommendedBottom: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    recommendedPrice: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#222',
+    },
+    addButton: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: RED,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    addButtonText: {
+      color: '#fff',
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginTop: -2,
+    },
+    bottomNav: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      flexDirection: 'row',
+      backgroundColor: '#fff',
+      borderTopWidth: 1,
+      borderTopColor: '#f0f0f0',
+      paddingVertical: 10,
+      paddingBottom: 25,
+    },
+    navItem: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    navIcon: {
+      fontSize: 22,
+      color: '#999',
+      marginBottom: 4,
+    },
+    navLabel: {
+      fontSize: 10,
+      color: '#999',
+      fontWeight: '600',
+    },
+  });

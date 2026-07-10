@@ -1,0 +1,58 @@
+[
+  {
+    "_id": { "$oid": "66c000000000000000000001" },
+    "restaurant": { "$oid": "66b000000000000000000001" },
+    "name": "Fried Chicken",
+    "description": "Crispy fried chicken with special sauce.",
+    "price": 45000,
+    "image": "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=300&h=300&fit=crop",
+    "category": "Chicken",
+    "rating": 4.8,
+    "isAvailable": true,
+    "createdAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "66c000000000000000000002" },
+    "restaurant": { "$oid": "66b000000000000000000001" },
+    "name": "Chicken Burger",
+    "description": "Soft burger with crispy chicken and fresh vegetables.",
+    "price": 55000,
+    "image": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&h=300&fit=crop",
+    "category": "Burger",
+    "rating": 4.7,
+    "isAvailable": true,
+    "createdAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "66c000000000000000000003" },
+    "restaurant": { "$oid": "66b000000000000000000002" },
+    "name": "Chicken Rice",
+    "description": "Hot chicken rice with soup and vegetables.",
+    "price": 50000,
+    "image": "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=300&h=300&fit=crop",
+    "category": "Rice",
+    "rating": 4.6,
+    "isAvailable": true,
+    "createdAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "66c000000000000000000004" },
+    "restaurant": { "$oid": "66b000000000000000000003" },
+    "name": "Beef Noodle Soup",
+    "description": "Traditional beef noodle soup with rich broth.",
+    "price": 60000,
+    "image": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=300&h=300&fit=crop",
+    "category": "Noodles",
+    "rating": 4.9,
+    "isAvailable": true,
+    "createdAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "__v": 0
+  }
+]

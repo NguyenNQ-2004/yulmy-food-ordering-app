@@ -1,0 +1,38 @@
+[
+  {
+    "_id": { "$oid": "671000000000000000000001" },
+    "user": { "$oid": "66a000000000000000000001" },
+    "title": "Dat hang thanh cong",
+    "message": "Don YULMY-20260710-0001 da duoc tao thanh cong.",
+    "type": "order",
+    "isRead": false,
+    "relatedOrder": { "$oid": "66f000000000000000000001" },
+    "createdAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "671000000000000000000002" },
+    "user": { "$oid": "66a000000000000000000001" },
+    "title": "Thanh toan thanh cong",
+    "message": "Thanh toan cho don YULMY-20260710-0001 da thanh cong.",
+    "type": "order",
+    "isRead": false,
+    "relatedOrder": { "$oid": "66f000000000000000000001" },
+    "createdAt": { "$date": "2026-07-10T00:02:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T00:02:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "671000000000000000000003" },
+    "user": { "$oid": "66a000000000000000000001" },
+    "title": "Cap nhat don hang",
+    "message": "Don YULMY-20260710-0002 da duoc xac nhan.",
+    "type": "order",
+    "isRead": false,
+    "relatedOrder": { "$oid": "66f000000000000000000002" },
+    "createdAt": { "$date": "2026-07-10T01:05:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T01:05:00.000Z" },
+    "__v": 0
+  }
+]
