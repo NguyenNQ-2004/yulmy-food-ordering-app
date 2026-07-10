@@ -11,8 +11,10 @@ import {
   Alert,
 } from 'react-native';
 
-import { addItemToCart, clearCart } from '../../services/customerOrderApi';
-import { clearLocalCartItems } from '../../services/localCartStorage';
+import { useFocusEffect } from '@react-navigation/native';
+
+import { addItemToCart, clearCart, getMyCart } from '../../services/customerOrderApi';
+import { clearLocalCartItems, loadLocalCartItems } from '../../services/localCartStorage';
 
 const RED = '#B11226';
 const LIGHT_BG = '#fffaf9';
@@ -37,10 +39,28 @@ const TRENDING_FEATURED = {
 export default function SearchScreen({ navigation }) {
   const [recentSearches, setRecentSearches] = useState(['Healthy', 'Burger', 'Sushi']);
   const [searchQuery, setSearchQuery] = useState('');
+  const [cartCount, setCartCount] = useState(0);
+
+  const refreshCartCount = async () => {
+    try {
+      const cart = await getMyCart();
+      setCartCount(Number(cart?.totalItems || 0));
+    } catch (error) {
+      const storedItems = await loadLocalCartItems();
+      setCartCount(storedItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0));
+    }
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshCartCount();
+    }, [])
+  );
 
   const handleAddToCart = async (item) => {
     try {
-      await addItemToCart(item.id, 1);
+      const cart = await addItemToCart(item.id, 1);
+      setCartCount(Number(cart?.totalItems || 0));
       await clearLocalCartItems();
       Alert.alert('Success', 'Item added to cart');
     } catch (error) {
@@ -57,7 +77,8 @@ export default function SearchScreen({ navigation }) {
               onPress: async () => {
                 try {
                   await clearCart();
-                  await addItemToCart(item.id, 1);
+                  const cart = await addItemToCart(item.id, 1);
+                  setCartCount(Number(cart?.totalItems || 0));
                   await clearLocalCartItems();
                   Alert.alert('Success', 'Item added to cart');
                 } catch (replaceError) {
@@ -77,6 +98,14 @@ export default function SearchScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Search</Text>
+        <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Cart')}>
+          <Text style={styles.headerEmoji}>🛒</Text>
+          {cartCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{cartCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -224,6 +253,28 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: '#222',
+  },
+  headerIcon: {
+    padding: 5,
+  },
+  headerEmoji: {
+    fontSize: 20,
+  },
+  badge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: RED,
+    borderRadius: 10,
+    width: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   scrollContent: {
     paddingBottom: 20,

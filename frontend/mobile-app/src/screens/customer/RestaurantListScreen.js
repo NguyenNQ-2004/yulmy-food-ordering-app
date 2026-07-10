@@ -9,6 +9,9 @@ import {
   TextInput,
   Image,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { getMyCart } from '../../services/customerOrderApi';
+import { loadLocalCartItems } from '../../services/localCartStorage';
 
 const RED = '#B11226';
 const LIGHT_BG = '#fffaf9';
@@ -58,6 +61,23 @@ const RESTAURANTS = [
 export default function RestaurantListScreen({ navigation }) {
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [cartCount, setCartCount] = useState(0);
+
+  const refreshCartCount = async () => {
+    try {
+      const cart = await getMyCart();
+      setCartCount(Number(cart?.totalItems || 0));
+    } catch (error) {
+      const storedItems = await loadLocalCartItems();
+      setCartCount(storedItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0));
+    }
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshCartCount();
+    }, [])
+  );
 
   const filteredRestaurants = RESTAURANTS.filter(r => {
     const matchCategory = activeCategory === 'All' || r.category === activeCategory;
@@ -73,8 +93,13 @@ export default function RestaurantListScreen({ navigation }) {
           <Text style={{fontSize: 20, color: '#222'}}>{'<-'}</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Epicurean</Text>
-        <TouchableOpacity style={styles.headerIcon}>
-          <Text style={{fontSize: 20}}>🛍️</Text>
+        <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Cart')}>
+          <Text style={{fontSize: 20}}>🛒</Text>
+          {cartCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{cartCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -193,6 +218,22 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: RED,
+  },
+  badge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: RED,
+    borderRadius: 10,
+    width: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   scrollContent: {
     paddingBottom: 20,

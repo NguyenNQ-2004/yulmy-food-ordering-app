@@ -11,6 +11,7 @@ import {
   Alert,
 } from 'react-native';
 
+import { useFocusEffect } from '@react-navigation/native';
 import { addItemToCart, clearCart, getMyCart } from '../../services/customerOrderApi';
 import { clearLocalCartItems } from '../../services/localCartStorage';
 
@@ -75,7 +76,7 @@ const ALL_MENU_ITEMS = [
     price: 45.00,
     image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=500&q=80',
     tags: ['PREMIUM'],
-    restaurantName: 'Masa Sushi'
+    restaurantName: 'Akira Omakase'
   },
   {
     id: '66c00000000000000000000d',
@@ -84,7 +85,7 @@ const ALL_MENU_ITEMS = [
     price: 18.00,
     image: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=500&q=80',
     tags: ['VEGETARIAN'],
-    restaurantName: "L'Antica Pizzeria..."
+    restaurantName: 'Lumina Osteria'
   },
   {
     id: '66c000000000000000000005',
@@ -168,18 +169,21 @@ export default function RestaurantDetailScreen({ navigation, route }) {
   const [cartCount, setCartCount] = useState(1);
   const [cartTotal, setCartTotal] = useState(18.00);
 
-  useEffect(() => {
-    const fetchCart = async () => {
-      try {
-        const cart = await getMyCart();
-        setCartCount(Number(cart?.totalItems || 0));
-        setCartTotal(Number(cart?.totalAmount || 0));
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    fetchCart();
-  }, []);
+  const refreshCartCount = async () => {
+    try {
+      const cart = await getMyCart();
+      setCartCount(Number(cart?.totalItems || 0));
+      setCartTotal(Number(cart?.totalAmount || 0));
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshCartCount();
+    }, [])
+  );
 
   const addBackendCartItem = async (item) => {
     const cart = await addItemToCart(item.id, 1);
@@ -230,8 +234,13 @@ export default function RestaurantDetailScreen({ navigation, route }) {
           <Text style={{fontSize: 20, color: '#222'}}>{'<-'}</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Epicurean</Text>
-        <TouchableOpacity style={styles.headerIcon}>
-          <Text style={{fontSize: 20}}>🛍️</Text>
+        <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Cart')}>
+          <Text style={{fontSize: 20}}>🛒</Text>
+          {cartCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{cartCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -342,6 +351,22 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: RED,
+  },
+  badge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: RED,
+    borderRadius: 10,
+    width: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   scrollContent: {
     paddingBottom: 20,

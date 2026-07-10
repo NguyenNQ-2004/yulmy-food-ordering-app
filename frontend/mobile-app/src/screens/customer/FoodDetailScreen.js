@@ -11,8 +11,9 @@ import {
   Alert,
 } from 'react-native';
 
-import { addItemToCart, clearCart } from '../../services/customerOrderApi';
-import { clearLocalCartItems } from '../../services/localCartStorage';
+import { useFocusEffect } from '@react-navigation/native';
+import { addItemToCart, clearCart, getMyCart } from '../../services/customerOrderApi';
+import { clearLocalCartItems, loadLocalCartItems } from '../../services/localCartStorage';
 
 const { width } = Dimensions.get('window');
 
@@ -60,13 +61,31 @@ export default function FoodDetailScreen({ navigation, route }) {
 
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+
+  const refreshCartCount = async () => {
+    try {
+      const cart = await getMyCart();
+      setCartCount(Number(cart?.totalItems || 0));
+    } catch (error) {
+      const storedItems = await loadLocalCartItems();
+      setCartCount(storedItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0));
+    }
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshCartCount();
+    }, [])
+  );
 
   const handleIncrease = () => setQuantity(q => q + 1);
   const handleDecrease = () => setQuantity(q => Math.max(1, q - 1));
 
   const handleAddToCart = async () => {
     try {
-      await addItemToCart(currentFood.id || currentFood._id, quantity);
+      const cart = await addItemToCart(currentFood.id || currentFood._id, quantity);
+      setCartCount(Number(cart?.totalItems || 0));
       await clearLocalCartItems();
       Alert.alert('Success', 'Added to cart');
       navigation.goBack();
@@ -84,7 +103,8 @@ export default function FoodDetailScreen({ navigation, route }) {
               onPress: async () => {
                 try {
                   await clearCart();
-                  await addItemToCart(currentFood.id || currentFood._id, quantity);
+                  const cart = await addItemToCart(currentFood.id || currentFood._id, quantity);
+                  setCartCount(Number(cart?.totalItems || 0));
                   await clearLocalCartItems();
                   Alert.alert('Success', 'Added to cart');
                   navigation.goBack();
@@ -109,8 +129,13 @@ export default function FoodDetailScreen({ navigation, route }) {
           <Text style={{fontSize: 20, color: '#222'}}>{'<-'}</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Epicurean</Text>
-        <TouchableOpacity style={styles.headerIcon}>
-          <Text style={{fontSize: 20}}>🛍️</Text>
+        <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Cart')}>
+          <Text style={{fontSize: 20}}>🛒</Text>
+          {cartCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{cartCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -232,6 +257,22 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: RED,
+  },
+  badge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: RED,
+    borderRadius: 10,
+    width: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   scrollContent: {
     paddingBottom: 0,
