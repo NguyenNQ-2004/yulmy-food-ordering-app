@@ -2,14 +2,13 @@ import React, { createContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert, Platform } from 'react-native';
 
-import api, { setAuthToken } from '../services/api';
+import api from '../services/api';
 
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [token, setToken] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
 
   const persistUserSession = async (userData, userToken = token) => {
     setCurrentUser(userData);
@@ -24,22 +23,17 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const restoreSession = async () => {
       try {
-        const [storedUser, storedToken] = await Promise.all([
+        const [savedUser, savedToken] = await Promise.all([
           AsyncStorage.getItem('user'),
           AsyncStorage.getItem('token'),
         ]);
 
-        if (storedUser && storedToken) {
-          const parsedUser = JSON.parse(storedUser);
-          setCurrentUser(parsedUser);
-          setToken(storedToken);
-          setAuthToken(storedToken);
+        if (savedUser && savedToken) {
+          setCurrentUser(JSON.parse(savedUser));
+          setToken(savedToken);
         }
       } catch (error) {
         await AsyncStorage.multiRemove(['user', 'token']);
-        setAuthToken(null);
-      } finally {
-        setAuthLoading(false);
       }
     };
 
@@ -56,10 +50,11 @@ export function AuthProvider({ children }) {
       const userData = response.data.data.user;
       const userToken = response.data.data.token;
 
+      setCurrentUser(userData);
       setToken(userToken);
-      setAuthToken(userToken);
 
-      await persistUserSession(userData, userToken);
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+      await AsyncStorage.setItem('token', userToken);
 
       return {
         success: true,
@@ -74,16 +69,11 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    try {
-      setAuthLoading(true);
-      setCurrentUser(null);
-      setToken(null);
-      setAuthToken(null);
+    setCurrentUser(null);
+    setToken(null);
 
-      await AsyncStorage.multiRemove(['user', 'token']);
-    } finally {
-      setAuthLoading(false);
-    }
+    await AsyncStorage.removeItem('user');
+    await AsyncStorage.removeItem('token');
   };
 
   const confirmLogout = (message = 'Do you want to logout?') => {
@@ -206,7 +196,6 @@ export function AuthProvider({ children }) {
       value={{
         currentUser,
         token,
-        authLoading,
         login,
         logout,
         confirmLogout,

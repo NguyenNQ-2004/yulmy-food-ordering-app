@@ -20,24 +20,8 @@ const GRAY = '#888';
 
 const CATEGORIES = ['Featured', 'Vegan', 'Gluten-Free', 'Sushi', 'Burger'];
 const POPULAR_RESTAURANTS = [
-  {
-    id: 1,
-    name: 'Masa Sushi',
-    category: 'Japanese',
-    price: '$$$$',
-    rating: 4.9,
-    time: '30-45 min',
-    color: '#e8c9b8',
-  },
-  {
-    id: 2,
-    name: "L'Antica Pizzeria...",
-    category: 'Italian',
-    price: '$$',
-    rating: 4.8,
-    time: '20-30 min',
-    color: '#e0c090',
-  },
+  { id: 1, name: 'Masa Sushi', category: 'Japanese', price: '$$$$', rating: 4.9, time: '30-45 min', color: '#e8c9b8' },
+  { id: 2, name: "L'Antica Pizzeria...", category: 'Italian', price: '$$', rating: 4.8, time: '20-30 min', color: '#e0c090' },
 ];
 
 const RECOMMENDED = [
@@ -76,7 +60,7 @@ function formatMoney(value) {
 }
 
 export default function HomeScreen({ navigation }) {
-  const { currentUser, confirmLogout } = useContext(AuthContext);
+  const { currentUser, logout } = useContext(AuthContext);
   const [cartCount, setCartCount] = useState(0);
   const [activeCategory, setActiveCategory] = useState('Featured');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -125,7 +109,7 @@ export default function HomeScreen({ navigation }) {
 
   const handleLogout = () => {
     setShowProfileMenu(false);
-    confirmLogout('Are you sure you want to logout?');
+    logout();
   };
 
   const handleOpenCart = () => {

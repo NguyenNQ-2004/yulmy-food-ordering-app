@@ -28,7 +28,6 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate inputs
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -36,7 +35,6 @@ const login = async (req, res) => {
       });
     }
 
-    // Check user exists
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({
@@ -45,14 +43,6 @@ const login = async (req, res) => {
       });
     }
 
-    if (user.status === 'blocked') {
-      return res.status(403).json({
-        success: false,
-        message: 'This account has been blocked',
-      });
-    }
-
-    // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({
@@ -61,19 +51,26 @@ const login = async (req, res) => {
       });
     }
 
-    // Generate JWT token
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET || 'yulmy_secret_key',
       { expiresIn: '30d' }
     );
 
-    // Return response
     return res.status(200).json({
       success: true,
       data: {
         token,
-        user: serializeUser(user),
+        user: {
+          id: user._id,
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role,
+          phone: user.phone,
+          avatar: user.avatar,
+          address: user.address,
+          status: user.status,
+        },
       },
     });
   } catch (error) {
@@ -96,7 +93,6 @@ const register = async (req, res) => {
       });
     }
 
-    // Check if user already exists
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({
@@ -105,20 +101,16 @@ const register = async (req, res) => {
       });
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user
-    const user = await User.create({
+    await User.create({
       fullName,
       email,
       password: hashedPassword,
       phone: phone || '',
     });
 
-    // We can either auto login or just return success
-    // Let's just return success and ask user to login
     return res.status(201).json({
       success: true,
       message: 'User registered successfully. Please login.',
@@ -145,14 +137,12 @@ const resetPassword = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      // Return success anyway to prevent email enumeration
       return res.status(200).json({
         success: true,
         message: 'If the email exists, a reset link will be sent to it.',
       });
     }
 
-    // In a real app, generate a reset token and send email here.
     return res.status(200).json({
       success: true,
       message: 'If the email exists, a reset link will be sent to it.',
