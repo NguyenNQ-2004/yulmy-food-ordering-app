@@ -1,12 +1,49 @@
-import React, { createContext, useState } from 'react';
+import React, { createContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import api from '../services/api';
+
+import api, { setAuthToken } from '../services/api';
 
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  const persistUserSession = async (userData, userToken = token) => {
+    setCurrentUser(userData);
+
+    if (userToken) {
+      await AsyncStorage.setItem('token', userToken);
+    }
+
+    await AsyncStorage.setItem('user', JSON.stringify(userData));
+  };
+
+  useEffect(() => {
+    const restoreSession = async () => {
+      try {
+        const [storedUser, storedToken] = await Promise.all([
+          AsyncStorage.getItem('user'),
+          AsyncStorage.getItem('token'),
+        ]);
+
+        if (storedUser && storedToken) {
+          const parsedUser = JSON.parse(storedUser);
+          setCurrentUser(parsedUser);
+          setToken(storedToken);
+          setAuthToken(storedToken);
+        }
+      } catch (error) {
+        await AsyncStorage.multiRemove(['user', 'token']);
+        setAuthToken(null);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    restoreSession();
+  }, []);
 
   const login = async (email, password) => {
     try {
@@ -18,11 +55,10 @@ export function AuthProvider({ children }) {
       const userData = response.data.data.user;
       const userToken = response.data.data.token;
 
-      setCurrentUser(userData);
       setToken(userToken);
+      setAuthToken(userToken);
 
-      await AsyncStorage.setItem('user', JSON.stringify(userData));
-      await AsyncStorage.setItem('token', userToken);
+      await persistUserSession(userData, userToken);
 
       return {
         success: true,
@@ -39,6 +75,7 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     setCurrentUser(null);
     setToken(null);
+    setAuthToken(null);
 
     await AsyncStorage.removeItem('user');
     await AsyncStorage.removeItem('token');
@@ -83,15 +120,77 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const refreshCurrentUser = async () => {
+    try {
+      const response = await api.get('/auth/me');
+      const userData = response.data.data;
+      await persistUserSession(userData);
+
+      return {
+        success: true,
+        data: userData,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || 'Failed to refresh account information.',
+      };
+    }
+  };
+
+  const updatePreferences = async (payload) => {
+    try {
+      const response = await api.patch('/auth/preferences', payload);
+      const userData = response.data.data;
+      await persistUserSession(userData);
+
+      return {
+        success: true,
+        data: userData,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || 'Failed to update preferences.',
+      };
+    }
+  };
+
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      const response = await api.post('/auth/change-password', {
+        currentPassword,
+        newPassword,
+      });
+
+      return {
+        success: true,
+        message: response.data.message || 'Password updated successfully.',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message || 'Failed to change password.',
+      };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
         currentUser,
         token,
+        authLoading,
         login,
         logout,
         register,
         resetPassword,
+        refreshCurrentUser,
+        updatePreferences,
+        changePassword,
       }}
     >
       {children}
