@@ -85,7 +85,6 @@ export default function HomeScreen({ navigation }) {
       <TouchableOpacity style={styles.logoutButton} onPress={logout}>
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
-    </View>
         <View style={styles.searchBar}>
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput 
@@ -424,9 +423,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: 'bold',
   },
+  logoutButton: {
+    backgroundColor: '#333',
+    padding: 14,
+    borderRadius: 12,
+    marginTop: 6,
+    marginBottom: 15,
+    marginHorizontal: 20,
+  },
   logoutText: {
     color: '#fff',
     textAlign: 'center',
+    fontWeight: 'bold',
+  },
     recommendedGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
