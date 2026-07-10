@@ -38,7 +38,7 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ['customer', 'admin'],
+      enum: ['customer', 'restaurant_owner', 'admin'],
       default: 'customer',
     },
 
@@ -46,6 +46,21 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ['active', 'blocked'],
       default: 'active',
+    },
+
+    preferences: {
+      twoFactorEnabled: {
+        type: Boolean,
+        default: false,
+      },
+      pushNotificationsEnabled: {
+        type: Boolean,
+        default: true,
+      },
+      emailReportsEnabled: {
+        type: Boolean,
+        default: true,
+      },
     },
   },
   {

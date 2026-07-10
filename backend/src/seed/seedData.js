@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
+const path = require('path');
 
 const connectDB = require('../config/db');
 
@@ -8,10 +9,50 @@ const User = require('../models/User');
 const Restaurant = require('../models/Restaurant');
 const Food = require('../models/Food');
 const Voucher = require('../models/Voucher');
+const Cart = require('../models/Cart');
+const Order = require('../models/Order');
+const OrderItem = require('../models/OrderItem');
+const Payment = require('../models/Payment');
+const Notification = require('../models/Notification');
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 connectDB();
+
+const toObjectId = (id) => new mongoose.Types.ObjectId(id);
+
+const IDS = {
+  customer: toObjectId('66a000000000000000000001'),
+  admin: toObjectId('66a000000000000000000002'),
+  restaurantChicken: toObjectId('66b000000000000000000001'),
+  restaurantComNgon: toObjectId('66b000000000000000000002'),
+  restaurantNoodle: toObjectId('66b000000000000000000003'),
+  restaurantLumina: toObjectId('66b000000000000000000004'),
+  restaurantAkira: toObjectId('66b000000000000000000005'),
+  restaurantVerdant: toObjectId('66b000000000000000000006'),
+  restaurantMaison: toObjectId('66b000000000000000000007'),
+  friedChicken: toObjectId('66c000000000000000000001'),
+  chickenBurger: toObjectId('66c000000000000000000002'),
+  chickenRice: toObjectId('66c000000000000000000003'),
+  beefNoodle: toObjectId('66c000000000000000000004'),
+  foodTruffleRisotto: toObjectId('66c000000000000000000005'),
+  foodSpicyTuna: toObjectId('66c000000000000000000006'),
+  foodBuddhaBowl: toObjectId('66c000000000000000000007'),
+  foodLavaCake: toObjectId('66c000000000000000000008'),
+  foodMatchaCrepe: toObjectId('66c000000000000000000009'),
+  foodAvocadoToast: toObjectId('66c00000000000000000000a'),
+  foodSearedScallops: toObjectId('66c00000000000000000000b'),
+  voucherYulmy10: toObjectId('66d000000000000000000001'),
+  voucherFreeship: toObjectId('66d000000000000000000002'),
+  cartCustomer: toObjectId('66e000000000000000000001'),
+};
+
+const IMAGES = {
+  friedChicken: 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=300&h=300&fit=crop',
+  chickenBurger: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&h=300&fit=crop',
+  chickenRice: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=300&h=300&fit=crop',
+  beefNoodle: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=300&h=300&fit=crop',
+};
 
 const seedData = async () => {
   try {
@@ -19,11 +60,17 @@ const seedData = async () => {
     await Restaurant.deleteMany();
     await Food.deleteMany();
     await Voucher.deleteMany();
+    await Cart.deleteMany();
+    await Order.deleteMany();
+    await OrderItem.deleteMany();
+    await Payment.deleteMany();
+    await Notification.deleteMany();
 
     const hashedPassword = await bcrypt.hash('123456', 10);
 
-    const users = await User.insertMany([
+    await User.insertMany([
       {
+        _id: IDS.customer,
         fullName: 'Nguyen Customer',
         email: 'user@gmail.com',
         password: hashedPassword,
@@ -32,6 +79,7 @@ const seedData = async () => {
         role: 'customer',
       },
       {
+        _id: IDS.admin,
         fullName: 'Admin Yulmy',
         email: 'admin@gmail.com',
         password: hashedPassword,
@@ -41,8 +89,9 @@ const seedData = async () => {
       },
     ]);
 
-    const restaurants = await Restaurant.insertMany([
+    await Restaurant.insertMany([
       {
+        _id: IDS.restaurantChicken,
         name: 'Yulmy Chicken',
         address: 'Hoa Lac, Ha Noi',
         category: 'Fast Food',
@@ -51,6 +100,7 @@ const seedData = async () => {
         deliveryTime: '20-30 min',
       },
       {
+        _id: IDS.restaurantComNgon,
         name: 'Com Ngon Corner',
         address: 'Cau Giay, Ha Noi',
         category: 'Vietnamese Food',
@@ -59,6 +109,7 @@ const seedData = async () => {
         deliveryTime: '25-35 min',
       },
       {
+        _id: IDS.restaurantNoodle,
         name: 'Noodle House',
         address: 'My Dinh, Ha Noi',
         category: 'Noodles',
@@ -66,69 +117,207 @@ const seedData = async () => {
         rating: 4.7,
         deliveryTime: '15-25 min',
       },
+      {
+        _id: IDS.restaurantLumina,
+        name: 'Lumina Osteria',
+        address: 'Hoan Kiem, Ha Noi',
+        category: 'Italian',
+        image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400&h=250&fit=crop',
+        rating: 4.9,
+        deliveryTime: '35-45 min',
+      },
+      {
+        _id: IDS.restaurantAkira,
+        name: 'Akira Omakase',
+        address: 'Ba Dinh, Ha Noi',
+        category: 'Japanese',
+        image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&h=250&fit=crop',
+        rating: 4.8,
+        deliveryTime: '40-55 min',
+      },
+      {
+        _id: IDS.restaurantVerdant,
+        name: 'Verdant Kitchen',
+        address: 'Tay Ho, Ha Noi',
+        category: 'Vegan',
+        image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=250&fit=crop',
+        rating: 4.7,
+        deliveryTime: '25-35 min',
+      },
+      {
+        _id: IDS.restaurantMaison,
+        name: 'Maison De Sucre',
+        address: 'Hai Ba Trung, Ha Noi',
+        category: 'Desserts',
+        image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=250&fit=crop',
+        rating: 4.9,
+        deliveryTime: '20-30 min',
+      },
     ]);
 
     await Food.insertMany([
       {
-        restaurant: restaurants[0]._id,
+        _id: IDS.friedChicken,
+        restaurant: IDS.restaurantChicken,
         name: 'Fried Chicken',
         description: 'Crispy fried chicken with special sauce.',
-        price: 45000,
-        image: 'https://picsum.photos/300/200?random=4',
+        price: 4.5,
+        image: IMAGES.friedChicken,
         category: 'Chicken',
         rating: 4.8,
       },
       {
-        restaurant: restaurants[0]._id,
+        _id: IDS.chickenBurger,
+        restaurant: IDS.restaurantChicken,
         name: 'Chicken Burger',
         description: 'Soft burger with crispy chicken and fresh vegetables.',
-        price: 55000,
-        image: 'https://picsum.photos/300/200?random=5',
+        price: 5.5,
+        image: IMAGES.chickenBurger,
         category: 'Burger',
         rating: 4.7,
       },
       {
-        restaurant: restaurants[1]._id,
+        _id: IDS.chickenRice,
+        restaurant: IDS.restaurantComNgon,
         name: 'Chicken Rice',
         description: 'Hot chicken rice with soup and vegetables.',
-        price: 50000,
-        image: 'https://picsum.photos/300/200?random=6',
+        price: 5,
+        image: IMAGES.chickenRice,
         category: 'Rice',
         rating: 4.6,
       },
       {
-        restaurant: restaurants[2]._id,
+        _id: IDS.beefNoodle,
+        restaurant: IDS.restaurantNoodle,
         name: 'Beef Noodle Soup',
         description: 'Traditional beef noodle soup with rich broth.',
-        price: 60000,
-        image: 'https://picsum.photos/300/200?random=7',
+        price: 6,
+        image: IMAGES.beefNoodle,
         category: 'Noodles',
+        rating: 4.9,
+      },
+      {
+        _id: IDS.foodTruffleRisotto,
+        restaurant: IDS.restaurantLumina,
+        name: 'Truffle Mushroom Risotto',
+        description: 'Creamy Arborio rice with wild porcini mushrooms and black truffle.',
+        price: 280000,
+        image: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=800&q=80',
+        category: 'Italian',
+        rating: 4.9,
+      },
+      {
+        _id: IDS.foodSpicyTuna,
+        restaurant: IDS.restaurantAkira,
+        name: 'Spicy Tuna Roll',
+        description: 'Fresh tuna with spicy mayo and crispy tempura flakes.',
+        price: 150000,
+        image: 'https://images.unsplash.com/photo-1553621042-f6e147245754?w=500&q=80',
+        category: 'Japanese',
+        rating: 4.8,
+      },
+      {
+        _id: IDS.foodBuddhaBowl,
+        restaurant: IDS.restaurantVerdant,
+        name: 'Vegan Buddha Bowl',
+        description: 'Quinoa, roasted sweet potatoes, avocado, and tahini dressing.',
+        price: 120000,
+        image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&q=80',
+        category: 'Vegan',
+        rating: 4.7,
+      },
+      {
+        _id: IDS.foodLavaCake,
+        restaurant: IDS.restaurantMaison,
+        name: 'Chocolate Lava Cake',
+        description: 'Warm chocolate cake with a molten center, served with vanilla ice cream.',
+        price: 90000,
+        image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&q=80',
+        category: 'Desserts',
+        rating: 4.9,
+      },
+      {
+        _id: IDS.foodMatchaCrepe,
+        restaurant: IDS.restaurantMaison,
+        name: 'Matcha Crepe',
+        description: 'Delicate layers of crepe with matcha infused cream.',
+        price: 85000,
+        image: 'https://images.unsplash.com/photo-1514849302-984523450ce4?w=500&q=80',
+        category: 'Desserts',
+        rating: 4.8,
+      },
+      {
+        _id: IDS.foodAvocadoToast,
+        restaurant: IDS.restaurantVerdant,
+        name: 'Avocado Toast',
+        description: 'Sourdough toast topped with smashed avocado and poached egg.',
+        price: 110000,
+        image: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=500&q=80',
+        category: 'Vegan',
+        rating: 4.6,
+      },
+      {
+        _id: IDS.foodSearedScallops,
+        restaurant: IDS.restaurantLumina,
+        name: 'Seared Scallops',
+        description: 'Pan-seared scallops with cauliflower puree and herb oil.',
+        price: 320000,
+        image: 'https://images.unsplash.com/photo-1599321955726-e048426594af?w=500&q=80',
+        category: 'Seafood',
         rating: 4.9,
       },
     ]);
 
     await Voucher.insertMany([
       {
+        _id: IDS.voucherYulmy10,
         code: 'YULMY10',
         title: '10% Off',
         description: 'Get 10% off for your next order.',
         discountType: 'percent',
         discountValue: 10,
-        minOrderAmount: 50000,
-        maxDiscountAmount: 20000,
+        minOrderAmount: 5,
+        maxDiscountAmount: 2,
         endDate: new Date('2026-12-31'),
       },
       {
+        _id: IDS.voucherFreeship,
         code: 'FREESHIP',
         title: 'Free Shipping',
-        description: 'Get 15000 VND discount for delivery fee.',
+        description: 'Get $1.50 discount for delivery fee.',
         discountType: 'fixed',
-        discountValue: 15000,
-        minOrderAmount: 30000,
-        maxDiscountAmount: 15000,
+        discountValue: 1.5,
+        minOrderAmount: 3,
+        maxDiscountAmount: 1.5,
         endDate: new Date('2026-12-31'),
       },
     ]);
+
+    await Cart.create({
+      _id: IDS.cartCustomer,
+      user: IDS.customer,
+      restaurant: IDS.restaurantChicken,
+      items: [
+        {
+          food: IDS.friedChicken,
+          name: 'Fried Chicken',
+          image: IMAGES.friedChicken,
+          quantity: 2,
+          price: 4.5,
+          subtotal: 9,
+        },
+        {
+          food: IDS.chickenBurger,
+          name: 'Chicken Burger',
+          image: IMAGES.chickenBurger,
+          quantity: 1,
+          price: 5.5,
+          subtotal: 5.5,
+        },
+      ],
+      totalItems: 3,
+      totalAmount: 14.5,
+    });
 
     console.log('Seed data imported successfully');
     console.log('Customer: user@gmail.com / 123456');

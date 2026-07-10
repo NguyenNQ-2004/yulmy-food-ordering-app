@@ -1,11 +1,16 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 
 const connectDB = require('./config/db');
+const adminRoutes = require('./routes/adminRoutes');
 const authRoutes = require('./routes/authRoutes');
+const cartRoutes = require('./routes/cartRoutes');
+const orderRoutes = require('./routes/orderRoutes');
+const voucherRoutes = require('./routes/voucherRoutes');
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 connectDB();
 
@@ -15,6 +20,10 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/vouchers', voucherRoutes);
 
 app.get('/', (req, res) => {
   res.send('Yulmy Backend API is running');

@@ -1,0 +1,32 @@
+[
+  {
+    "code": "YULMY10",
+    "title": "10% Off",
+    "description": "Get 10% off for your next order.",
+    "discountType": "percent",
+    "discountValue": 10,
+    "minOrderAmount": 5,
+    "maxDiscountAmount": 2,
+    "startDate": { "$date": "2026-07-10T00:00:00.000Z" },
+    "endDate": { "$date": "2026-12-31T00:00:00.000Z" },
+    "status": "active",
+    "createdAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "code": "FREESHIP",
+    "title": "Free Shipping",
+    "description": "Get $1.50 discount for delivery fee.",
+    "discountType": "fixed",
+    "discountValue": 1.5,
+    "minOrderAmount": 3,
+    "maxDiscountAmount": 1.5,
+    "startDate": { "$date": "2026-07-10T00:00:00.000Z" },
+    "endDate": { "$date": "2026-12-31T00:00:00.000Z" },
+    "status": "active",
+    "createdAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "__v": 0
+  }
+]
