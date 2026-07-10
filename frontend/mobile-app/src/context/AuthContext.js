@@ -45,26 +45,6 @@ export function AuthProvider({ children }) {
     restoreSession();
   }, []);
 
-  useEffect(() => {
-    const restoreSession = async () => {
-      try {
-        const [savedUser, savedToken] = await Promise.all([
-          AsyncStorage.getItem('user'),
-          AsyncStorage.getItem('token'),
-        ]);
-
-        if (savedUser && savedToken) {
-          setCurrentUser(JSON.parse(savedUser));
-          setToken(savedToken);
-        }
-      } catch (error) {
-        await AsyncStorage.multiRemove(['user', 'token']);
-      }
-    };
-
-    restoreSession();
-  }, []);
-
   const login = async (email, password) => {
     try {
       const response = await api.post('/auth/login', {
