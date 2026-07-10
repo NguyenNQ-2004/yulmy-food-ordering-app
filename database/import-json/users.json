@@ -1,0 +1,30 @@
+[
+  {
+    "_id": { "$oid": "66a000000000000000000001" },
+    "fullName": "Nguyen Customer",
+    "email": "user@gmail.com",
+    "password": "$2b$10$sbXjdbYK5kn2z4MF/IqApOkMyDLtDtMbtsxma3S7le/ymzswcVg1y",
+    "phone": "0988888888",
+    "avatar": "",
+    "address": "Hoa Lac, Ha Noi",
+    "role": "customer",
+    "status": "active",
+    "createdAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "66a000000000000000000002" },
+    "fullName": "Admin Yulmy",
+    "email": "admin@gmail.com",
+    "password": "$2b$10$sbXjdbYK5kn2z4MF/IqApOkMyDLtDtMbtsxma3S7le/ymzswcVg1y",
+    "phone": "0999999999",
+    "avatar": "",
+    "address": "Ha Noi",
+    "role": "admin",
+    "status": "active",
+    "createdAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "__v": 0
+  }
+]

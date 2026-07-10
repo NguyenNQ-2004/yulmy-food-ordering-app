@@ -1,0 +1,30 @@
+[
+  {
+    "_id": { "$oid": "670000000000000000000001" },
+    "order": { "$oid": "66f000000000000000000001" },
+    "user": { "$oid": "66a000000000000000000001" },
+    "amount": 145500,
+    "method": "MOCK_PAYMENT",
+    "status": "success",
+    "transactionCode": "PAY-20260710-ABC123",
+    "paidAt": { "$date": "2026-07-10T00:02:00.000Z" },
+    "failureReason": "",
+    "createdAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T00:02:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "670000000000000000000002" },
+    "order": { "$oid": "66f000000000000000000002" },
+    "user": { "$oid": "66a000000000000000000001" },
+    "amount": 75000,
+    "method": "COD",
+    "status": "pending",
+    "transactionCode": "",
+    "paidAt": null,
+    "failureReason": "",
+    "createdAt": { "$date": "2026-07-10T01:00:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T01:00:00.000Z" },
+    "__v": 0
+  }
+]

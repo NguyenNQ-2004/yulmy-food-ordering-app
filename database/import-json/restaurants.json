@@ -1,0 +1,41 @@
+[
+  {
+    "_id": { "$oid": "66b000000000000000000001" },
+    "name": "Yulmy Chicken",
+    "address": "Hoa Lac, Ha Noi",
+    "category": "Fast Food",
+    "image": "https://picsum.photos/400/250?random=1",
+    "rating": 4.8,
+    "deliveryTime": "20-30 min",
+    "status": "active",
+    "createdAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "66b000000000000000000002" },
+    "name": "Com Ngon Corner",
+    "address": "Cau Giay, Ha Noi",
+    "category": "Vietnamese Food",
+    "image": "https://picsum.photos/400/250?random=2",
+    "rating": 4.6,
+    "deliveryTime": "25-35 min",
+    "status": "active",
+    "createdAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "66b000000000000000000003" },
+    "name": "Noodle House",
+    "address": "My Dinh, Ha Noi",
+    "category": "Noodles",
+    "image": "https://picsum.photos/400/250?random=3",
+    "rating": 4.7,
+    "deliveryTime": "15-25 min",
+    "status": "active",
+    "createdAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "__v": 0
+  }
+]

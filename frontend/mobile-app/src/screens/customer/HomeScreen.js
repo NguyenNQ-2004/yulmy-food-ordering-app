@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 import { AuthContext } from '../../context/AuthContext';
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
   const { currentUser, logout } = useContext(AuthContext);
 
   return (
@@ -20,6 +20,10 @@ export default function HomeScreen() {
         <Text style={styles.cardTitle}>Next Customer Screens</Text>
         <Text>Restaurant List, Food Detail, Cart, Checkout</Text>
       </View>
+
+      <TouchableOpacity style={styles.cartButton} onPress={() => navigation.navigate('Cart')}>
+        <Text style={styles.cartText}>Open Cart</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity style={styles.logoutButton} onPress={logout}>
         <Text style={styles.logoutText}>Logout</Text>
@@ -60,6 +64,18 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     marginTop: 20,
+  },
+  cartButton: {
+    borderWidth: 1,
+    borderColor: RED,
+    padding: 14,
+    borderRadius: 12,
+    marginTop: 6,
+  },
+  cartText: {
+    color: RED,
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
   logoutText: {
     color: '#fff',

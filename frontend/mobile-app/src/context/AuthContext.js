@@ -1,4 +1,4 @@
-import React, { createContext, useState } from 'react';
+import React, { createContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 
@@ -7,6 +7,26 @@ export const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [token, setToken] = useState(null);
+
+  useEffect(() => {
+    const restoreSession = async () => {
+      try {
+        const [savedUser, savedToken] = await Promise.all([
+          AsyncStorage.getItem('user'),
+          AsyncStorage.getItem('token'),
+        ]);
+
+        if (savedUser && savedToken) {
+          setCurrentUser(JSON.parse(savedUser));
+          setToken(savedToken);
+        }
+      } catch (error) {
+        await AsyncStorage.multiRemove(['user', 'token']);
+      }
+    };
+
+    restoreSession();
+  }, []);
 
   const login = async (email, password) => {
     try {
