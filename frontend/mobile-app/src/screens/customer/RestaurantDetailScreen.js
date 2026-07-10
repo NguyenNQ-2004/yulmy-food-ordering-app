@@ -43,6 +43,24 @@ const ALL_MENU_ITEMS = [
     restaurantName: 'Yulmy Chicken'
   },
   {
+    id: '66c00000000000000000000f',
+    name: 'Spicy Chicken Wings',
+    description: 'Hot and spicy chicken wings served with ranch.',
+    price: 6.00,
+    image: 'https://images.unsplash.com/photo-1527477396000-e27163b481c2?w=500&q=80',
+    tags: ['SPICY'],
+    restaurantName: 'Yulmy Chicken'
+  },
+  {
+    id: '66c000000000000000000010',
+    name: 'Chicken Nuggets',
+    description: 'Crispy golden chicken nuggets, 10 pieces.',
+    price: 4.00,
+    image: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=500&q=80',
+    tags: ['SNACK'],
+    restaurantName: 'Yulmy Chicken'
+  },
+  {
     id: '66c000000000000000000003',
     name: 'Chicken Rice',
     description: 'Hainanese style chicken with fragrant rice.',
@@ -168,6 +186,7 @@ export default function RestaurantDetailScreen({ navigation, route }) {
   const [activeCategory, setActiveCategory] = useState('Popular');
   const [cartCount, setCartCount] = useState(1);
   const [cartTotal, setCartTotal] = useState(18.00);
+  const [addingItemId, setAddingItemId] = useState(null);
 
   const refreshCartCount = async () => {
     try {
@@ -193,9 +212,10 @@ export default function RestaurantDetailScreen({ navigation, route }) {
   };
 
   const handleAddToCart = async (item) => {
+    if (addingItemId) return;
+    setAddingItemId(item.id);
     try {
       await addBackendCartItem(item);
-      Alert.alert('Success', 'Item added to cart');
     } catch (error) {
       const message = error.response?.data?.message || 'Cannot add this item to cart.';
 
@@ -212,7 +232,6 @@ export default function RestaurantDetailScreen({ navigation, route }) {
                 try {
                   await clearCart();
                   await addBackendCartItem(item);
-                  Alert.alert('Success', 'Item added to cart');
                 } catch (replaceError) {
                   Alert.alert('Add to cart failed', replaceError.response?.data?.message || 'Cannot add this item to cart.');
                 }
@@ -223,6 +242,8 @@ export default function RestaurantDetailScreen({ navigation, route }) {
         return;
       }
       Alert.alert('Add to cart failed', message);
+    } finally {
+      setAddingItemId(null);
     }
   };
 
@@ -300,8 +321,12 @@ export default function RestaurantDetailScreen({ navigation, route }) {
                 <View style={styles.menuItemBottom}>
                   <Text style={styles.menuItemPrice}>${item.price.toFixed(2)}</Text>
                   <TouchableOpacity 
-                    style={index === 0 ? styles.addButtonDark : styles.addButtonLite}
+                    style={[
+                      index === 0 ? styles.addButtonDark : styles.addButtonLite,
+                      addingItemId === item.id && { opacity: 0.5 }
+                    ]}
                     onPress={() => handleAddToCart(item)}
+                    disabled={addingItemId === item.id}
                   >
                     <Text style={index === 0 ? styles.addButtonDarkText : styles.addButtonLiteText}>+</Text>
                   </TouchableOpacity>

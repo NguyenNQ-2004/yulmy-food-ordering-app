@@ -80,6 +80,7 @@ export default function CartScreen({ navigation, route }) {
   const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   const [cartError, setCartError] = useState('');
   const [pendingRemoveItem, setPendingRemoveItem] = useState(null);
+  const [updatingItemId, setUpdatingItemId] = useState(null);
   const localCartItems = route?.params?.localCartItems || [];
   const localRestaurantName = route?.params?.localRestaurantName || 'Epicurean';
   const selectedVoucherParam = route?.params?.selectedVoucher;
@@ -214,6 +215,8 @@ export default function CartScreen({ navigation, route }) {
           'Cart update failed',
           error.response?.data?.message || 'Cannot update this cart item.'
         );
+      } finally {
+        setUpdatingItemId(null);
       }
 
       setAppliedVoucher(null);
@@ -235,6 +238,7 @@ export default function CartScreen({ navigation, route }) {
   };
 
   const updateQuantity = (itemId, change) => {
+    if (updatingItemId) return;
     const currentItem = items.find((item) => item.id === itemId);
 
     if (change < 0 && currentItem?.quantity === 1) {
@@ -242,6 +246,7 @@ export default function CartScreen({ navigation, route }) {
       return;
     }
 
+    setUpdatingItemId(itemId);
     updateQuantityDirectly(itemId, change);
   };
 
@@ -377,15 +382,17 @@ export default function CartScreen({ navigation, route }) {
                     <Text style={styles.itemPrice}>{formatMoney(item.price)}</Text>
                     <View style={styles.stepper}>
                       <TouchableOpacity
-                        style={styles.stepperButton}
+                        style={[styles.stepperButton, updatingItemId === item.id && { opacity: 0.5 }]}
                         onPress={() => updateQuantity(item.id, -1)}
+                        disabled={updatingItemId === item.id}
                       >
                         <Text style={styles.stepperText}>-</Text>
                       </TouchableOpacity>
                       <Text style={styles.quantity}>{item.quantity}</Text>
                       <TouchableOpacity
-                        style={styles.stepperButton}
+                        style={[styles.stepperButton, updatingItemId === item.id && { opacity: 0.5 }]}
                         onPress={() => updateQuantity(item.id, 1)}
+                        disabled={updatingItemId === item.id}
                       >
                         <Text style={styles.stepperText}>+</Text>
                       </TouchableOpacity>

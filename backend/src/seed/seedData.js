@@ -44,6 +44,8 @@ const IDS = {
   foodSearedScallops: toObjectId('66c00000000000000000000b'),
   foodMasaSushi: toObjectId('66c00000000000000000000c'),
   foodMargheritaPizza: toObjectId('66c00000000000000000000d'),
+  spicyChickenWings: toObjectId('66c00000000000000000000f'),
+  chickenNuggets: toObjectId('66c000000000000000000010'),
   voucherYulmy10: toObjectId('66d000000000000000000001'),
   voucherFreeship: toObjectId('66d000000000000000000002'),
   cartCustomer: toObjectId('66e000000000000000000001'),
@@ -54,6 +56,8 @@ const IMAGES = {
   chickenBurger: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&h=300&fit=crop',
   chickenRice: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=300&h=300&fit=crop',
   beefNoodle: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=300&h=300&fit=crop',
+  spicyWings: 'https://images.unsplash.com/photo-1527477396000-e27163b481c2?w=300&h=300&fit=crop',
+  chickenNuggets: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=300&h=300&fit=crop',
 };
 
 const seedData = async () => {
@@ -177,6 +181,26 @@ const seedData = async () => {
         image: IMAGES.chickenBurger,
         category: 'Burger',
         rating: 4.7,
+      },
+      {
+        _id: IDS.spicyChickenWings,
+        restaurant: IDS.restaurantChicken,
+        name: 'Spicy Chicken Wings',
+        description: 'Hot and spicy chicken wings served with ranch.',
+        price: 6.0,
+        image: IMAGES.spicyWings,
+        category: 'Chicken',
+        rating: 4.5,
+      },
+      {
+        _id: IDS.chickenNuggets,
+        restaurant: IDS.restaurantChicken,
+        name: 'Chicken Nuggets',
+        description: 'Crispy golden chicken nuggets, 10 pieces.',
+        price: 4.0,
+        image: IMAGES.chickenNuggets,
+        category: 'Snack',
+        rating: 4.8,
       },
       {
         _id: IDS.chickenRice,

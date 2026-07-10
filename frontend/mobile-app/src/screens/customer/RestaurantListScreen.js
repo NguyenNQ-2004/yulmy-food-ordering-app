@@ -55,6 +55,33 @@ const RESTAURANTS = [
     time: '20-30 min',
     category: 'Desserts',
     image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&q=80',
+  },
+  {
+    id: 5,
+    name: 'Yulmy Chicken',
+    description: 'Delicious fried chicken and burgers.',
+    rating: 4.8,
+    time: '20-30 min',
+    category: 'Fast Food',
+    image: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=500&q=80',
+  },
+  {
+    id: 6,
+    name: 'Com Ngon Corner',
+    description: 'Traditional Asian rice dishes.',
+    rating: 4.6,
+    time: '15-25 min',
+    category: 'Fast Food',
+    image: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500&q=80',
+  },
+  {
+    id: 7,
+    name: 'Noodle House',
+    description: 'Authentic noodle soups.',
+    rating: 4.9,
+    time: '20-30 min',
+    category: 'Fast Food',
+    image: 'https://images.unsplash.com/photo-1557872943-16a5ac26437e?w=500&q=80',
   }
 ];
 

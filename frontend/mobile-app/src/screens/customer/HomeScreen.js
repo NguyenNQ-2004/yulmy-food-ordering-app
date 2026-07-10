@@ -82,6 +82,7 @@ export default function HomeScreen({ navigation }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [localCartItems, setLocalCartItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [addingItemId, setAddingItemId] = useState(null);
 
   const refreshCartCount = async () => {
     try {
@@ -140,9 +141,10 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleAddToCart = async (item) => {
+    if (addingItemId) return;
+    setAddingItemId(item.id);
     try {
       await addBackendCartItem(item);
-      Alert.alert('Success', 'Item added to cart');
     } catch (error) {
       const message = error.response?.data?.message || 'Cannot add this item to cart.';
 
@@ -347,11 +349,12 @@ export default function HomeScreen({ navigation }) {
                  <View style={styles.recommendedBottom}>
                    <Text style={styles.recommendedPrice}>{formatMoney(item.price)}</Text>
                    <TouchableOpacity 
-                     style={styles.addButton} 
+                     style={[styles.addButton, addingItemId === item.id && { opacity: 0.5 }]} 
                      onPress={() => {
                        setShowProfileMenu(false);
                        handleAddToCart(item);
                      }}
+                     disabled={addingItemId === item.id}
                    >
                      <Text style={styles.addButtonText}>+</Text>
                    </TouchableOpacity>

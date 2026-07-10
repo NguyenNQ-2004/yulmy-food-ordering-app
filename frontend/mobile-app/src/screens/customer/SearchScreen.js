@@ -40,6 +40,7 @@ export default function SearchScreen({ navigation }) {
   const [recentSearches, setRecentSearches] = useState(['Healthy', 'Burger', 'Sushi']);
   const [searchQuery, setSearchQuery] = useState('');
   const [cartCount, setCartCount] = useState(0);
+  const [addingItemId, setAddingItemId] = useState(null);
 
   const refreshCartCount = async () => {
     try {
@@ -58,11 +59,12 @@ export default function SearchScreen({ navigation }) {
   );
 
   const handleAddToCart = async (item) => {
+    if (addingItemId) return;
+    setAddingItemId(item.id);
     try {
       const cart = await addItemToCart(item.id, 1);
       setCartCount(Number(cart?.totalItems || 0));
       await clearLocalCartItems();
-      Alert.alert('Success', 'Item added to cart');
     } catch (error) {
       const message = error.response?.data?.message || 'Cannot add this item to cart.';
       if (message === 'Cart already contains items from another restaurant') {
@@ -80,7 +82,6 @@ export default function SearchScreen({ navigation }) {
                   const cart = await addItemToCart(item.id, 1);
                   setCartCount(Number(cart?.totalItems || 0));
                   await clearLocalCartItems();
-                  Alert.alert('Success', 'Item added to cart');
                 } catch (replaceError) {
                   Alert.alert('Add to cart failed', replaceError.response?.data?.message || 'Cannot add this item to cart.');
                 }
@@ -91,6 +92,8 @@ export default function SearchScreen({ navigation }) {
         return;
       }
       Alert.alert('Add to cart failed', message);
+    } finally {
+      setAddingItemId(null);
     }
   };
 
@@ -178,7 +181,11 @@ export default function SearchScreen({ navigation }) {
                   <Text style={styles.trendingRest}>{item.restaurant}</Text>
                   <View style={styles.trendingBottom}>
                     <Text style={styles.trendingPrice}>${item.price}</Text>
-                    <TouchableOpacity style={styles.addButtonLite} onPress={() => handleAddToCart(item)}>
+                    <TouchableOpacity 
+                      style={[styles.addButtonLite, addingItemId === item.id && { opacity: 0.5 }]} 
+                      onPress={() => handleAddToCart(item)}
+                      disabled={addingItemId === item.id}
+                    >
                       <Text style={styles.addButtonLiteText}>+</Text>
                     </TouchableOpacity>
                   </View>
@@ -200,7 +207,11 @@ export default function SearchScreen({ navigation }) {
               </View>
               <View style={styles.featuredBottom}>
                 <Text style={styles.featuredPrice}>${TRENDING_FEATURED.price}</Text>
-                <TouchableOpacity style={styles.addButtonDark} onPress={() => handleAddToCart(TRENDING_FEATURED)}>
+                <TouchableOpacity 
+                  style={[styles.addButtonDark, addingItemId === TRENDING_FEATURED.id && { opacity: 0.5 }]} 
+                  onPress={() => handleAddToCart(TRENDING_FEATURED)}
+                  disabled={addingItemId === TRENDING_FEATURED.id}
+                >
                   <Text style={styles.addButtonDarkText}>+</Text>
                 </TouchableOpacity>
               </View>

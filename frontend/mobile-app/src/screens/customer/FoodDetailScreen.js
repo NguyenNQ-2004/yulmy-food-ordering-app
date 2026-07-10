@@ -87,7 +87,6 @@ export default function FoodDetailScreen({ navigation, route }) {
       const cart = await addItemToCart(currentFood.id || currentFood._id, quantity);
       setCartCount(Number(cart?.totalItems || 0));
       await clearLocalCartItems();
-      Alert.alert('Success', 'Added to cart');
       navigation.goBack();
     } catch (error) {
       const message = error.response?.data?.message || 'Cannot add this item to cart.';
@@ -106,7 +105,6 @@ export default function FoodDetailScreen({ navigation, route }) {
                   const cart = await addItemToCart(currentFood.id || currentFood._id, quantity);
                   setCartCount(Number(cart?.totalItems || 0));
                   await clearLocalCartItems();
-                  Alert.alert('Success', 'Added to cart');
                   navigation.goBack();
                 } catch (replaceError) {
                   Alert.alert('Add to cart failed', replaceError.response?.data?.message || 'Cannot add this item to cart.');
