@@ -1,59 +1,78 @@
 # Yulmy - Mobile Food Ordering App
 
-Dự án phát triển ứng dụng đặt đồ ăn trực tuyến (Mobile Food Ordering App) sử dụng React Native Expo và Node.js Express.
+## 1. Giới thiệu project
 
-## 🚀 Công nghệ sử dụng
-- **Frontend**: React Native Expo, JavaScript (Nằm trong thư mục [frontend/mobile-app](file:///c:/Users/nguye/Desktop/yulmy-food-ordering-app/frontend/mobile-app))
-- **Backend**: Node.js Express (Nằm trong thư mục [backend](file:///c:/Users/nguye/Desktop/yulmy-food-ordering-app/backend))
-- **Database**: MongoDB Local (`mongodb://127.0.0.1:27017/yulmy_db`)
+Yulmy là ứng dụng đặt đồ ăn trên thiết bị di động, bao gồm 3 phân hệ người dùng (roles) chính:
 
----
+- **Customer**: Người dùng đặt đồ ăn.
+- **Restaurant Owner**: Chủ nhà hàng (quản lý quán của mình, đăng món, sửa món, xem và cập nhật trạng thái đơn hàng).
+- **Admin**: Quản trị hệ thống (quản lý user, restaurant, food, order, review và thống kê tổng).
 
-## 🛠️ Hướng dẫn cài đặt & Khởi chạy
+## 2. Công nghệ sử dụng
 
-### 1. Chuẩn bị cơ sở dữ liệu (MongoDB)
-- Đảm bảo MongoDB Local đang hoạt động tại địa chỉ: `mongodb://127.0.0.1:27017/yulmy_db`
+- **Frontend**: React Native Expo, JavaScript
+- **Backend**: Node.js, Express
+- **Database**: MongoDB (Local)
 
-### 2. Chạy Backend (Port: 5000)
-Di chuyển vào thư mục [backend](file:///c:/Users/nguye/Desktop/yulmy-food-ordering-app/backend), cài đặt thư viện và khởi chạy:
-```bash
-cd backend
-npm install
-# Khởi tạo dữ liệu mẫu (chỉ cần chạy lần đầu hoặc khi muốn reset database)
-npm run seed
-# Chạy server ở chế độ development
-npm run dev
-```
+## 3. Cấu trúc thư mục
 
-### 3. Chạy Frontend
-Di chuyển vào thư mục [frontend/mobile-app](file:///c:/Users/nguye/Desktop/yulmy-food-ordering-app/frontend/mobile-app) và khởi chạy Expo:
-```bash
-cd frontend/mobile-app
-npm install
-npm run start
-# Nhấn 'w' để chạy phiên bản Web, hoặc quét mã QR bằng ứng dụng Expo Go trên điện thoại để test Mobile
-```
+- `frontend/mobile-app/`: Chứa mã nguồn ứng dụng Mobile.
+- `backend/`: Chứa mã nguồn server API.
 
----
+## 4. Cách chạy Backend
 
-## 🔑 Tài khoản Demo
-Sau khi chạy lệnh `npm run seed` ở backend, bạn có thể dùng các tài khoản sau để đăng nhập kiểm thử:
-- **Khách hàng (Customer)**: `user@gmail.com` / Mật khẩu: `123456` (Vào Home Screen)
-- **Quản trị viên (Admin)**: `admin@gmail.com` / Mật khẩu: `123456` (Vào Admin Dashboard)
+Database local sử dụng URI: `mongodb://127.0.0.1:27017/yulmy_db`. Server chạy tại port **5000**.
 
----
+**Các bước khởi chạy:**
 
-## 🌿 Quy tắc tạo nhánh Git
-Dự án áp dụng quy trình Git Flow cơ bản. Khi bắt đầu phát triển tính năng mới, hãy tạo nhánh từ `develop` theo cấu trúc:
-- Nhánh chính thức (Production): `main`
-- Nhánh phát triển chung: `develop`
-- Nhánh tính năng cá nhân: `feature/<tên-thành-viên>-<tên-tính-năng>`
+1. Mở terminal, di chuyển vào thư mục backend: `cd backend`
+2. Cài đặt thư viện: `npm install`
+3. Chạy lệnh tạo dữ liệu mẫu (nếu database trống): `npm run seed`
+4. Khởi động server (chế độ dev): `npm run dev`
 
----
+*(Lưu ý: Backend hiện đã có API auth: register, login, get profile).*
 
-## 👥 Phân công thành viên & Nhánh Git cá nhân
-- **Nguyễn** (`feature/nguyen-core-customer`): Phát triển chức năng cốt lõi cho khách hàng (Danh sách nhà hàng, Chi tiết món ăn, Giỏ hàng, Thanh toán).
-- **Duy** (`feature/duy-order-payment`): Xử lý các nghiệp vụ Đặt hàng & Cổng thanh toán (Order & Payment).
-- **Ngọc** (`feature/ngoc-admin-crud`): Xử lý phần quản trị hệ thống (CRUD nhà hàng, món ăn, Quản lý đơn hàng).
-- **Mạnh** (`feature/manh-engagement-deploy`): Xây dựng tính năng tương tác (Voucher, Đánh giá, Thông báo) và triển khai ứng dụng (Deploy).
-- **Sơn** (`feature/son-profile-tracking`): Quản lý hồ sơ cá nhân và theo dõi trạng thái đơn hàng thời gian thực (Profile & Order Tracking).
+## 5. Cách chạy Frontend
+
+1. Mở một terminal mới, di chuyển vào thư mục app: `cd frontend/mobile-app`
+2. Cài đặt thư viện: `npm install`
+3. Khởi động Expo: `npm start`
+4. Mở ứng dụng bằng máy ảo (Android/iOS) hoặc quét mã QR bằng app Expo Go trên điện thoại thật.
+   *(Lưu ý: Nếu dùng máy ảo Android và bị lỗi kết nối mạng, hãy đổi `localhost` thành `10.0.2.2` trong file cấu hình gọi API).*
+
+## 6. Tài khoản Demo
+
+*(Dùng để test tính năng sau khi đã chạy `npm run seed`)*
+
+- **Customer**: `user@gmail.com` / `123456`
+- **Restaurant Owner**: `owner@gmail.com` / `123456`
+- **Admin**: `admin@gmail.com` / `123456`
+
+## 7. Quy tắc Git Branch
+
+Các branch trên repository được phân chia cụ thể cho từng người:
+
+- `main`: Bản ổn định dùng để demo và nộp bài.
+- `develop`: Nhánh tổng hợp code để test chung.
+- `feature/nguyen-core-customer`: Nhánh của Nguyên (Auth, customer home, restaurant list/detail, food detail).
+- `feature/duy-order-payment`: Nhánh của Duy (Cart, checkout, payment, order API).
+- `feature/ngoc-admin-system`: Nhánh của Ngọc (Admin dashboard, user/restaurant/food/order management, statistics).
+- `feature/manh-owner-chat-deploy-ai`: Nhánh của Mạnh (Restaurant owner flow, chat, Git, deploy, AI optional).
+- `feature/son-profile-tracking-review`: Nhánh của Sơn (Profile, order history, tracking, review, settings).
+
+**Quy trình code:** Checkout sang nhánh `feature` của cá nhân -> Code -> Commit -> Push -> Nhờ Mạnh hỗ trợ Merge vào `develop`. Tuyệt đối không code đè trực tiếp lên `main` hay `develop`.
+
+## 8. Phân công thành viên
+
+- **Nguyên (Leader)**: Auth, role navigation, customer core flow, database overview, README, viva.
+- **Duy**: Order, cart, checkout, payment mock, backend order API.
+- **Ngọc**: Admin system management.
+- **Mạnh**: Restaurant owner flow, chat, Git branch, merge code, deploy, AI optional.
+- **Sơn**: Profile, order tracking, review, settings.
+
+## 9. Ghi chú cho thành viên trước khi code
+
+- Clone code về hãy nhớ chạy `npm install` ở cả hai thư mục `backend` và `frontend/mobile-app`.
+- Hãy chắc chắn MongoDB local đang bật và kết nối đúng vào `127.0.0.1:27017`.
+- Làm đúng task ở nhánh feature của mình, tránh sửa file của người khác (để hạn chế conflict).
+- Có lỗi hay cần pull/merge code, hãy nhắn lên nhóm để được hỗ trợ kịp thời.

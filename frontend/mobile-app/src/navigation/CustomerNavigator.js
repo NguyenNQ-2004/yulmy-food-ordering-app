@@ -17,7 +17,7 @@ export default function CustomerNavigator() {
       <Stack.Screen
         name="Home"
         component={HomeScreen}
-        options={{ title: 'Yulmy Home' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Cart"
