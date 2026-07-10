@@ -24,7 +24,7 @@ const TEXT = '#151515';
 const MUTED = '#7b7b86';
 
 export default function AdminFoodFormScreen({ navigation, route }) {
-  const { currentUser, logout } = useContext(AuthContext);
+  const { currentUser, confirmLogout } = useContext(AuthContext);
   const { foods, restaurants, foodCategories, addFood, updateFood } =
     useContext(AdminContext);
 
@@ -68,10 +68,7 @@ export default function AdminFoodFormScreen({ navigation, route }) {
   const screenTitle = currentFood ? 'Edit Food' : 'Add Food';
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Do you want to logout from admin portal?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: logout },
-    ]);
+    confirmLogout('Do you want to logout from admin portal?');
   };
 
   const handleSave = async () => {

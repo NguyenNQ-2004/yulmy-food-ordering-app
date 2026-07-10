@@ -26,7 +26,7 @@ const MUTED = '#7b7b86';
 const FILTERS = ['all', 'active', 'inactive'];
 
 export default function AdminRestaurantsScreen({ navigation }) {
-  const { currentUser, logout } = useContext(AuthContext);
+  const { currentUser, confirmLogout } = useContext(AuthContext);
   const { restaurants, deleteRestaurant, error, loading } = useContext(AdminContext);
   const [keyword, setKeyword] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
@@ -63,10 +63,7 @@ export default function AdminRestaurantsScreen({ navigation }) {
   }, [activeFilter, keyword, restaurants]);
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Do you want to logout from admin portal?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: logout },
-    ]);
+    confirmLogout('Do you want to logout from admin portal?');
   };
 
   const handleDelete = (restaurantId, restaurantName) => {

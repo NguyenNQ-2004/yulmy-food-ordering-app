@@ -114,7 +114,7 @@ function MiniLineChart({ data }) {
 }
 
 export default function AdminDashboardScreen({ navigation }) {
-  const { currentUser, logout } = useContext(AuthContext);
+  const { currentUser, confirmLogout } = useContext(AuthContext);
   const { dashboard, loading, error } = useContext(AdminContext);
 
   const firstName = currentUser?.fullName?.split(' ')[0] || 'Admin';
@@ -128,10 +128,7 @@ export default function AdminDashboardScreen({ navigation }) {
     : 'AD';
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Do you want to logout from admin portal?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: logout },
-    ]);
+    confirmLogout('Do you want to logout from admin portal?');
   };
 
   const metrics = dashboard?.metrics || {

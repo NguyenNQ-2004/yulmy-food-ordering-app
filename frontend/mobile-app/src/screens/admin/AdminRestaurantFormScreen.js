@@ -26,7 +26,7 @@ const MUTED = '#7b7b86';
 const CATEGORIES = ['Fast Food', 'Japanese', 'Italian', 'Bakery', 'Healthy', 'Cafe'];
 
 export default function AdminRestaurantFormScreen({ navigation, route }) {
-  const { currentUser, logout } = useContext(AuthContext);
+  const { currentUser, confirmLogout } = useContext(AuthContext);
   const { restaurants, users, createRestaurant, updateRestaurant } =
     useContext(AdminContext);
 
@@ -66,10 +66,7 @@ export default function AdminRestaurantFormScreen({ navigation, route }) {
     'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80';
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Do you want to logout from admin portal?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: logout },
-    ]);
+    confirmLogout('Do you want to logout from admin portal?');
   };
 
   const handleSave = async () => {

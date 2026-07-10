@@ -76,7 +76,7 @@ function formatMoney(value) {
 }
 
 export default function HomeScreen({ navigation }) {
-  const { currentUser, logout } = useContext(AuthContext);
+  const { currentUser, confirmLogout } = useContext(AuthContext);
   const [cartCount, setCartCount] = useState(0);
   const [activeCategory, setActiveCategory] = useState('Featured');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -125,7 +125,7 @@ export default function HomeScreen({ navigation }) {
 
   const handleLogout = () => {
     setShowProfileMenu(false);
-    logout();
+    confirmLogout('Are you sure you want to logout?');
   };
 
   const handleOpenCart = () => {

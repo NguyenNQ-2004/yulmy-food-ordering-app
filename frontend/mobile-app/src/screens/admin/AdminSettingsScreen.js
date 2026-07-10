@@ -64,7 +64,7 @@ const getRoleLabel = (role) => {
 export default function AdminSettingsScreen({ navigation }) {
   const {
     currentUser,
-    logout,
+    confirmLogout,
     refreshCurrentUser,
     updatePreferences,
     changePassword,
@@ -126,10 +126,7 @@ export default function AdminSettingsScreen({ navigation }) {
   const infoContent = infoKey ? INFO_CONTENT[infoKey] : null;
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Do you want to logout from admin portal?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: logout },
-    ]);
+    confirmLogout('Do you want to logout from admin portal?');
   };
 
   const handleRefresh = async () => {

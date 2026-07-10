@@ -1,5 +1,6 @@
 import React, { createContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Alert, Platform } from 'react-native';
 
 import api, { setAuthToken } from '../services/api';
 
@@ -73,12 +74,34 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    setCurrentUser(null);
-    setToken(null);
-    setAuthToken(null);
+    try {
+      setAuthLoading(true);
+      setCurrentUser(null);
+      setToken(null);
+      setAuthToken(null);
 
-    await AsyncStorage.removeItem('user');
-    await AsyncStorage.removeItem('token');
+      await AsyncStorage.multiRemove(['user', 'token']);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const confirmLogout = (message = 'Do you want to logout?') => {
+    if (Platform.OS === 'web') {
+      const confirmed =
+        typeof window === 'undefined' ? true : window.confirm(message);
+
+      if (confirmed) {
+        logout();
+      }
+
+      return;
+    }
+
+    Alert.alert('Logout', message, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Logout', style: 'destructive', onPress: logout },
+    ]);
   };
 
   const register = async (fullName, email, password, phone) => {
@@ -186,6 +209,7 @@ export function AuthProvider({ children }) {
         authLoading,
         login,
         logout,
+        confirmLogout,
         register,
         resetPassword,
         refreshCurrentUser,

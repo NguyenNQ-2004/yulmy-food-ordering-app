@@ -8,6 +8,7 @@ import AdminNavigator from './AdminNavigator';
 
 export default function AppNavigator() {
   const { authLoading, currentUser } = useContext(AuthContext);
+  const navigationKey = currentUser ? currentUser.role || 'authenticated' : 'guest';
 
   if (authLoading) {
     return (
@@ -18,14 +19,14 @@ export default function AppNavigator() {
   }
 
   if (!currentUser) {
-    return <AuthNavigator />;
+    return <AuthNavigator key={navigationKey} />;
   }
 
   if (currentUser.role === 'admin') {
-    return <AdminNavigator />;
+    return <AdminNavigator key={navigationKey} />;
   }
 
-  return <CustomerNavigator />;
+  return <CustomerNavigator key={navigationKey} />;
 }
 
 const styles = StyleSheet.create({

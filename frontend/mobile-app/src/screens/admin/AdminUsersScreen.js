@@ -31,7 +31,7 @@ const ROLE_LABELS = {
 };
 
 export default function AdminUsersScreen({ navigation }) {
-  const { currentUser, logout } = useContext(AuthContext);
+  const { currentUser, confirmLogout } = useContext(AuthContext);
   const { users, toggleUserStatus, error, loading } = useContext(AdminContext);
   const [keyword, setKeyword] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
@@ -67,10 +67,7 @@ export default function AdminUsersScreen({ navigation }) {
   }, [activeFilter, keyword, users]);
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Do you want to logout from admin portal?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: logout },
-    ]);
+    confirmLogout('Do you want to logout from admin portal?');
   };
 
   const handleToggleStatus = (user) => {
