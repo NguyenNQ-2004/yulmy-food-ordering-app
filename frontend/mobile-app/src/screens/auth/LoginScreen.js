@@ -24,9 +24,13 @@ export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (!email.trim() || !password) {
+      Alert.alert('Validation Error', 'Please enter both email and password.');
+      return;
+    }
     setLoading(true);
 
-    const result = await login(email, password);
+    const result = await login(email.trim(), password);
 
     setLoading(false);
 

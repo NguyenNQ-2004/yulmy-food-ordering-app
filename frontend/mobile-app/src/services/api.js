@@ -1,10 +1,16 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 // Injected by app.config.js from EXPO_PUBLIC_API_URL. Localhost fallback keeps
 // web dev and the jest suite working when no env/extra is present.
-const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:5000/api';
+let API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:5000/api';
+
+// For web platform, dynamically use the current host's IP/domain to prevent connection issues
+if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location) {
+  API_URL = `http://${window.location.hostname}:5000/api`;
+}
 
 const api = axios.create({
   baseURL: API_URL,

@@ -56,11 +56,9 @@ Answer in the same language the user uses.`;
 
     // Call Gemini API
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-    const result = await model.generateContent([
-      { role: 'user', parts: [{ text: systemPrompt + '\n\nUser: ' + prompt.trim() }] },
-    ]);
+    const result = await model.generateContent(systemPrompt + '\n\nUser: ' + prompt.trim());
 
     const responseText = result.response.text();
 
@@ -70,7 +68,7 @@ Answer in the same language the user uses.`;
       prompt: prompt.trim(),
       response: responseText,
       feature: 'food_recommendation',
-      modelName: 'gemini-2.0-flash',
+      modelName: 'gemini-2.5-flash',
     });
 
     return res.status(200).json({

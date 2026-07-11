@@ -360,10 +360,13 @@ const seedData = async () => {
     // 4. ORDERS + ORDER ITEMS
     // ──────────────────────────────────────
     const order1 = await Order.create({
+      orderCode: 'ORD-000000000001',
       user: IDS.customer,
       restaurant: IDS.restaurantChicken,
+      receiverName: 'Nguyen Customer',
       deliveryAddress: '742 Evergreen Terrace, Hoa Lac, Ha Noi',
       phone: '0988888888',
+      itemsAmount: 14.5,
       totalAmount: 14.5,
       paymentMethod: 'COD',
       paymentStatus: 'unpaid',
@@ -372,15 +375,36 @@ const seedData = async () => {
     });
 
     await OrderItem.insertMany([
-      { order: order1._id, food: IDS.friedChicken, quantity: 2, price: 4.5 },
-      { order: order1._id, food: IDS.chickenBurger, quantity: 1, price: 5.5 },
+      {
+        order: order1._id,
+        food: IDS.friedChicken,
+        restaurant: IDS.restaurantChicken,
+        foodName: 'Fried Chicken',
+        foodImage: IMAGES.friedChicken,
+        quantity: 2,
+        price: 4.5,
+        subtotal: 9.0,
+      },
+      {
+        order: order1._id,
+        food: IDS.chickenBurger,
+        restaurant: IDS.restaurantChicken,
+        foodName: 'Chicken Burger',
+        foodImage: IMAGES.chickenBurger,
+        quantity: 1,
+        price: 5.5,
+        subtotal: 5.5,
+      },
     ]);
 
     const order2 = await Order.create({
+      orderCode: 'ORD-000000000002',
       user: IDS.customer,
       restaurant: IDS.restaurantChicken,
+      receiverName: 'Nguyen Customer',
       deliveryAddress: '15 Pham Van Dong, Cau Giay, Ha Noi',
       phone: '0988888888',
+      itemsAmount: 5.5,
       totalAmount: 5.5,
       paymentMethod: 'MOCK_PAYMENT',
       paymentStatus: 'paid',
@@ -389,14 +413,26 @@ const seedData = async () => {
     });
 
     await OrderItem.insertMany([
-      { order: order2._id, food: IDS.chickenBurger, quantity: 1, price: 5.5 },
+      {
+        order: order2._id,
+        food: IDS.chickenBurger,
+        restaurant: IDS.restaurantChicken,
+        foodName: 'Chicken Burger',
+        foodImage: IMAGES.chickenBurger,
+        quantity: 1,
+        price: 5.5,
+        subtotal: 5.5,
+      },
     ]);
 
     const order3 = await Order.create({
+      orderCode: 'ORD-000000000003',
       user: IDS.customer,
       restaurant: IDS.restaurantChicken,
+      receiverName: 'Nguyen Customer',
       deliveryAddress: '22 Le Loi, Ba Dinh, Ha Noi',
       phone: '0988888888',
+      itemsAmount: 15.5,
       totalAmount: 15.5,
       paymentMethod: 'MOCK_PAYMENT',
       paymentStatus: 'paid',
@@ -405,9 +441,36 @@ const seedData = async () => {
     });
 
     await OrderItem.insertMany([
-      { order: order3._id, food: IDS.friedChicken, quantity: 1, price: 4.5 },
-      { order: order3._id, food: IDS.chickenRice, quantity: 1, price: 5.0 },
-      { order: order3._id, food: IDS.beefNoodle, quantity: 1, price: 6.0 },
+      {
+        order: order3._id,
+        food: IDS.friedChicken,
+        restaurant: IDS.restaurantChicken,
+        foodName: 'Fried Chicken',
+        foodImage: IMAGES.friedChicken,
+        quantity: 1,
+        price: 4.5,
+        subtotal: 4.5,
+      },
+      {
+        order: order3._id,
+        food: IDS.chickenRice,
+        restaurant: IDS.restaurantChicken,
+        foodName: 'Chicken Rice',
+        foodImage: IMAGES.chickenRice,
+        quantity: 1,
+        price: 5.0,
+        subtotal: 5.0,
+      },
+      {
+        order: order3._id,
+        food: IDS.beefNoodle,
+        restaurant: IDS.restaurantChicken,
+        foodName: 'Beef Noodle Soup',
+        foodImage: IMAGES.beefNoodle,
+        quantity: 1,
+        price: 6.0,
+        subtotal: 6.0,
+      },
     ]);
 
     console.log('✅ Orders & OrderItems seeded');

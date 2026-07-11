@@ -38,6 +38,22 @@ export function AuthProvider({ children }) {
     };
 
     restoreSession();
+
+    const interceptor = api.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        if (error.response?.status === 401) {
+          setCurrentUser(null);
+          setToken(null);
+          await AsyncStorage.multiRemove(['user', 'token']);
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      api.interceptors.response.eject(interceptor);
+    };
   }, []);
 
   const login = async (email, password) => {

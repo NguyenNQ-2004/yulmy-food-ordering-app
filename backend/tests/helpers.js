@@ -24,7 +24,7 @@ const createUser = async (role = 'customer', overrides = {}) => {
 const createOwnerWithRestaurant = async (restaurantOverrides = {}) => {
   const { user, token } = await createUser('restaurant_owner');
   const restaurant = await Restaurant.create({
-    ownerId: user._id,
+    owner: user._id,
     name: restaurantOverrides.name || 'Test Kitchen',
     address: restaurantOverrides.address || '123 Test St',
     ...restaurantOverrides,
@@ -49,6 +49,9 @@ const createOrder = (restaurantId, userId, overrides = {}) =>
     phone: '0900000000',
     totalAmount: overrides.totalAmount ?? 100000,
     orderStatus: overrides.orderStatus || 'Pending',
+    orderCode: overrides.orderCode || 'ORD-' + Math.random().toString(36).substring(2, 11).toUpperCase(),
+    receiverName: overrides.receiverName || 'Test Receiver',
+    itemsAmount: overrides.itemsAmount ?? 1,
     ...overrides,
   });
 
