@@ -9,7 +9,7 @@ const Food = require('../models/Food');
  */
 const getMyRestaurant = async (req, res) => {
   try {
-    const restaurant = await Restaurant.findOne({ ownerId: req.user.id });
+    const restaurant = await Restaurant.findOne({ owner: req.user._id });
 
     if (!restaurant) {
       return res.status(404).json({
@@ -37,7 +37,7 @@ const getMyRestaurant = async (req, res) => {
  */
 const updateMyRestaurant = async (req, res) => {
   try {
-    const restaurant = await Restaurant.findOne({ ownerId: req.user.id });
+    const restaurant = await Restaurant.findOne({ owner: req.user._id });
 
     if (!restaurant) {
       return res.status(404).json({
@@ -80,7 +80,7 @@ const updateMyRestaurant = async (req, res) => {
  */
 const getDashboardStats = async (req, res) => {
   try {
-    const restaurant = await Restaurant.findOne({ ownerId: req.user.id });
+    const restaurant = await Restaurant.findOne({ owner: req.user._id });
 
     if (!restaurant) {
       return res.status(404).json({

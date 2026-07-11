@@ -1,11 +1,13 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
 /**
  * JWT authentication middleware.
  * Extracts Bearer token from Authorization header,
- * verifies it, and attaches { id, role } to req.user.
+ * verifies it, and attaches the full user document to req.user.
+ * Also checks if the user is blocked.
  */
-const authMiddleware = (req, res, next) => {
+const protect = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -19,12 +21,23 @@ const authMiddleware = (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'yulmy_secret_key');
 
-    req.user = {
-      id: decoded.id,
-      role: decoded.role,
-    };
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authorized, user not found',
+      });
+    }
 
-    next();
+    if (user.status === 'blocked') {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been blocked',
+      });
+    }
+
+    req.user = user;
+    return next();
   } catch (error) {
     return res.status(401).json({
       success: false,
@@ -35,7 +48,7 @@ const authMiddleware = (req, res, next) => {
 
 /**
  * Role-based access control middleware.
- * Usage: requireRole('restaurant_owner')
+ * Usage: requireRole('restaurant_owner') or requireRole('admin', 'restaurant_owner')
  */
 const requireRole = (...roles) => {
   return (req, res, next) => {
@@ -57,4 +70,26 @@ const requireRole = (...roles) => {
   };
 };
 
-module.exports = { authMiddleware, requireRole };
+/**
+ * Convenience middleware: admin-only access.
+ */
+const adminOnly = (req, res, next) => {
+  if (req.user?.role !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Admin access required',
+    });
+  }
+
+  return next();
+};
+
+// Export both naming conventions for backward compatibility.
+// - `protect` / `adminOnly` used by Nguyen/Duy/Ngoc's routes
+// - `authMiddleware` / `requireRole` used by Manh's owner/chat/AI routes
+module.exports = {
+  protect,
+  authMiddleware: protect,
+  requireRole,
+  adminOnly,
+};

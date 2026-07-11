@@ -1,0 +1,42 @@
+[
+  {
+    "_id": { "$oid": "66f000000000000000000001" },
+    "orderCode": "YULMY-20260710-0001",
+    "user": { "$oid": "66a000000000000000000001" },
+    "restaurant": { "$oid": "66b000000000000000000001" },
+    "receiverName": "Nguyen Customer",
+    "deliveryAddress": "Hoa Lac, Ha Noi",
+    "phone": "0988888888",
+    "note": "Khong cay",
+    "itemsAmount": 14.5,
+    "deliveryFee": 1.5,
+    "discountAmount": 1.45,
+    "totalAmount": 14.55,
+    "paymentMethod": "MOCK_PAYMENT",
+    "paymentStatus": "paid",
+    "orderStatus": "Pending",
+    "createdAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T00:00:00.000Z" },
+    "__v": 0
+  },
+  {
+    "_id": { "$oid": "66f000000000000000000002" },
+    "orderCode": "YULMY-20260710-0002",
+    "user": { "$oid": "66a000000000000000000001" },
+    "restaurant": { "$oid": "66b000000000000000000003" },
+    "receiverName": "Nguyen Customer",
+    "deliveryAddress": "Hoa Lac, Ha Noi",
+    "phone": "0988888888",
+    "note": "",
+    "itemsAmount": 6,
+    "deliveryFee": 1.5,
+    "discountAmount": 0,
+    "totalAmount": 7.5,
+    "paymentMethod": "COD",
+    "paymentStatus": "unpaid",
+    "orderStatus": "Confirmed",
+    "createdAt": { "$date": "2026-07-10T01:00:00.000Z" },
+    "updatedAt": { "$date": "2026-07-10T01:00:00.000Z" },
+    "__v": 0
+  }
+]

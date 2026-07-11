@@ -3,7 +3,7 @@ const router = express.Router();
 const { authMiddleware, requireRole } = require('../middleware/authMiddleware');
 const { getMyRestaurant, updateMyRestaurant, getDashboardStats } = require('../controllers/ownerController');
 const { getFoods, createFood, updateFood, deleteFood } = require('../controllers/foodController');
-const { getOrders, updateOrderStatus } = require('../controllers/orderController');
+const { getOwnerOrders, updateOwnerOrderStatus } = require('../controllers/orderController');
 
 // All routes require authentication + restaurant_owner role
 router.use(authMiddleware);
@@ -23,7 +23,7 @@ router.put('/foods/:id', updateFood);
 router.delete('/foods/:id', deleteFood);
 
 // Order management
-router.get('/orders', getOrders);
-router.put('/orders/:id/status', updateOrderStatus);
+router.get('/orders', getOwnerOrders);
+router.put('/orders/:id/status', updateOwnerOrderStatus);
 
 module.exports = router;

@@ -5,7 +5,7 @@ const Restaurant = require('../models/Restaurant');
  * Helper: get the restaurant ID for the logged-in owner.
  */
 const getOwnerRestaurantId = async (userId) => {
-  const restaurant = await Restaurant.findOne({ ownerId: userId });
+  const restaurant = await Restaurant.findOne({ owner: userId });
   return restaurant ? restaurant._id : null;
 };
 

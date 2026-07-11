@@ -14,19 +14,47 @@ const orderItemSchema = new mongoose.Schema(
       required: true,
     },
 
+    restaurant: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Restaurant',
+      required: true,
+    },
+
+    foodName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    foodImage: {
+      type: String,
+      default: '',
+    },
+
     quantity: {
       type: Number,
       required: true,
+      min: 1,
     },
 
     price: {
       type: Number,
       required: true,
+      min: 0,
+    },
+
+    subtotal: {
+      type: Number,
+      required: true,
+      min: 0,
     },
   },
   {
     timestamps: true,
   }
 );
+
+orderItemSchema.index({ order: 1 });
+orderItemSchema.index({ restaurant: 1 });
 
 module.exports = mongoose.model('OrderItem', orderItemSchema);
