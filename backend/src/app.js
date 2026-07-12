@@ -16,6 +16,7 @@ const voucherRoutes = require('./routes/voucherRoutes');
 const ownerRoutes = require('./routes/ownerRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const aiRoutes = require('./routes/aiRoutes');
+const customerRoutes = require('./routes/customerRoutes');
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use('/api/vouchers', voucherRoutes);
 app.use('/api/owner', ownerRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/customer', customerRoutes);
 
 app.get('/', (req, res) => {
   res.send('Yulmy Backend API is running');

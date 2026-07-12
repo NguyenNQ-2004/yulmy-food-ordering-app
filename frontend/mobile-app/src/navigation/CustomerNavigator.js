@@ -12,6 +12,10 @@ import AddressSelectionScreen from '../screens/customer/AddressSelectionScreen';
 import PaymentMethodScreen from '../screens/customer/PaymentMethodScreen';
 import VoucherScreen from '../screens/customer/VoucherScreen';
 import OrderSuccessScreen from '../screens/customer/OrderSuccessScreen';
+import FavoritesScreen from '../screens/customer/FavoritesScreen';
+import OrderHistoryScreen from '../screens/customer/OrderHistoryScreen';
+import ChatListScreen from '../screens/Chat/ChatListScreen';
+import ChatDetailScreen from '../screens/Chat/ChatDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -26,6 +30,11 @@ export default function CustomerNavigator() {
       <Stack.Screen
         name="Search"
         component={SearchScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Favorites"
+        component={FavoritesScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -71,6 +80,21 @@ export default function CustomerNavigator() {
       <Stack.Screen
         name="OrderSuccess"
         component={OrderSuccessScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="OrderHistory"
+        component={OrderHistoryScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ChatList"
+        component={ChatListScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ChatDetail"
+        component={ChatDetailScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

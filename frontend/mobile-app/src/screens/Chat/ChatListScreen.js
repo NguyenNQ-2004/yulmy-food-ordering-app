@@ -61,8 +61,8 @@ export default function ChatListScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <Header
-        title="Customer Inbox"
-        onBack={() => navigation.navigate('OwnerDashboard')}
+        title={currentUser?.role === 'restaurant_owner' ? 'Customer Inbox' : 'Messages'}
+        onBack={() => navigation.navigate(currentUser?.role === 'restaurant_owner' ? 'OwnerDashboard' : 'Home')}
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>

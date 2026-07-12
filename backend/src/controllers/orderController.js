@@ -267,11 +267,20 @@ const getMyOrders = async (req, res) => {
       Order.find({ user: req.user._id }).sort({ createdAt: -1 })
     );
 
+    const ordersWithItems = await Promise.all(
+      orders.map(async (order) => {
+        const items = await OrderItem.find({ order: order._id })
+          .populate('food', 'name price image');
+        return {
+          ...order.toObject(),
+          items,
+        };
+      })
+    );
+
     return res.status(200).json({
       success: true,
-      data: {
-        orders,
-      },
+      data: ordersWithItems,
     });
   } catch (error) {
     console.error('Get orders error:', error);

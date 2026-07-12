@@ -50,3 +50,21 @@ export async function getOrderStatus(orderId) {
   const response = await api.get(`/orders/${orderId}/status`);
   return response.data.data;
 }
+
+export async function getFavorites() {
+  const response = await api.get('/customer/favorites');
+  return response.data.data;
+}
+
+export async function toggleFavorite(foodId, restaurantId) {
+  const response = await api.post('/customer/favorites/toggle', {
+    foodId,
+    restaurantId,
+  });
+  return response.data.data;
+}
+
+export async function getMyOrders() {
+  const response = await api.get('/orders/my');
+  return response.data.data;
+}

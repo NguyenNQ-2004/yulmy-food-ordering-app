@@ -1,5 +1,6 @@
 const Chat = require('../models/Chat');
 const Message = require('../models/Message');
+const Restaurant = require('../models/Restaurant');
 
 /**
  * GET /api/chats
@@ -32,6 +33,49 @@ const getChats = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Server error while fetching chats.',
+    });
+  }
+};
+
+/**
+ * POST /api/chats
+ * Create or get a chat with a restaurant owner
+ */
+const createOrGetChat = async (req, res) => {
+  try {
+    const { restaurantId } = req.body;
+
+    const restaurant = await Restaurant.findById(restaurantId);
+    if (!restaurant) {
+      return res.status(404).json({
+        success: false,
+        message: 'Restaurant not found.',
+      });
+    }
+
+    let chat = await Chat.findOne({
+      customer: req.user.id,
+      owner: restaurant.owner,
+      restaurant: restaurantId,
+    });
+
+    if (!chat) {
+      chat = await Chat.create({
+        customer: req.user.id,
+        owner: restaurant.owner,
+        restaurant: restaurantId,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: chat,
+    });
+  } catch (error) {
+    console.error('createOrGetChat error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while creating or fetching chat.',
     });
   }
 };
@@ -149,6 +193,7 @@ const sendMessage = async (req, res) => {
 
 module.exports = {
   getChats,
+  createOrGetChat,
   getMessages,
   sendMessage,
 };

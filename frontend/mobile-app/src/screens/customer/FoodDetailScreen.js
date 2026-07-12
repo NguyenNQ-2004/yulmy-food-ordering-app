@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 
 import { useFocusEffect } from '@react-navigation/native';
-import { addItemToCart, clearCart, getMyCart } from '../../services/customerOrderApi';
+import { addItemToCart, clearCart, getMyCart, toggleFavorite, getFavorites } from '../../services/customerOrderApi';
 import { clearLocalCartItems, loadLocalCartItems } from '../../services/localCartStorage';
 
 const { width } = Dimensions.get('window');
@@ -76,8 +76,28 @@ export default function FoodDetailScreen({ navigation, route }) {
   useFocusEffect(
     React.useCallback(() => {
       refreshCartCount();
-    }, [])
+      // Check if this item is a favorite
+      const checkFavorite = async () => {
+        try {
+          const favs = await getFavorites();
+          const isFav = (favs || []).some(f => f.food && f.food._id === (currentFood.id || currentFood._id));
+          setIsFavorite(isFav);
+        } catch (error) {
+          console.error(error);
+        }
+      };
+      checkFavorite();
+    }, [currentFood.id, currentFood._id])
   );
+
+  const handleToggleFavorite = async () => {
+    try {
+      const result = await toggleFavorite(currentFood.id || currentFood._id, null);
+      setIsFavorite(result.isFavorite);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const handleIncrease = () => setQuantity(q => q + 1);
   const handleDecrease = () => setQuantity(q => Math.max(1, q - 1));
@@ -144,7 +164,7 @@ export default function FoodDetailScreen({ navigation, route }) {
           <Image source={{ uri: currentFood.image }} style={styles.coverImage} />
           <TouchableOpacity 
             style={styles.heartButton}
-            onPress={() => setIsFavorite(!isFavorite)}
+            onPress={handleToggleFavorite}
           >
             <Text style={{color: isFavorite ? RED : '#ccc', fontSize: 24, marginTop: -2}}>
               {isFavorite ? '♥' : '♡'}

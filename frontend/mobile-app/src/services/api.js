@@ -7,8 +7,12 @@ import { Platform } from 'react-native';
 // web dev and the jest suite working when no env/extra is present.
 let API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:5000/api';
 
-// For web platform, dynamically use the current host's IP/domain to prevent connection issues
-if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location) {
+// For physical devices or emulator, dynamically use the dev server IP
+if (__DEV__ && Platform.OS !== 'web' && Constants.expoConfig?.hostUri) {
+  const host = Constants.expoConfig.hostUri.split(':')[0];
+  API_URL = `http://${host}:5000/api`;
+} else if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location) {
+  // For web platform, dynamically use the current host's IP/domain
   API_URL = `http://${window.location.hostname}:5000/api`;
 }
 

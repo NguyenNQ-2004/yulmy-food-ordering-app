@@ -10,7 +10,7 @@ import {
   Image,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getMyCart } from '../../services/customerOrderApi';
+import { getMyCart, getFavorites, toggleFavorite } from '../../services/customerOrderApi';
 import { loadLocalCartItems } from '../../services/localCartStorage';
 
 const RED = '#B11226';
@@ -21,7 +21,7 @@ const CATEGORIES = ['All', 'Italian', 'Japanese', 'Vegan', 'Desserts', 'Fast Foo
 
 const RESTAURANTS = [
   {
-    id: 1,
+    id: '66b000000000000000000004',
     name: 'Lumina Osteria',
     description: 'Hand-crafted regional Italian cuisine emphasizing seasonal, hyper-local ingredients.',
     rating: 4.9,
@@ -30,7 +30,7 @@ const RESTAURANTS = [
     image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=500&q=80',
   },
   {
-    id: 2,
+    id: '66b000000000000000000005',
     name: 'Akira Omakase',
     description: 'An intimate, premium sushi experience curated daily by master chefs.',
     rating: 4.8,
@@ -39,7 +39,7 @@ const RESTAURANTS = [
     image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=500&q=80',
   },
   {
-    id: 3,
+    id: '66b000000000000000000006',
     name: 'Verdant Kitchen',
     description: 'Elevated plant-based dining focused on organic, sustainable whole foods.',
     rating: 4.7,
@@ -48,7 +48,7 @@ const RESTAURANTS = [
     image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&q=80',
   },
   {
-    id: 4,
+    id: '66b000000000000000000007',
     name: 'Maison De Sucre',
     description: 'Artisanal French pastries and bespoke desserts crafted with uncompromising technique.',
     rating: 4.9,
@@ -57,7 +57,7 @@ const RESTAURANTS = [
     image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&q=80',
   },
   {
-    id: 5,
+    id: '66b000000000000000000001',
     name: 'Yulmy Chicken',
     description: 'Delicious fried chicken and burgers.',
     rating: 4.8,
@@ -66,7 +66,7 @@ const RESTAURANTS = [
     image: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=500&q=80',
   },
   {
-    id: 6,
+    id: '66b000000000000000000002',
     name: 'Com Ngon Corner',
     description: 'Traditional Asian rice dishes.',
     rating: 4.6,
@@ -75,7 +75,7 @@ const RESTAURANTS = [
     image: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500&q=80',
   },
   {
-    id: 7,
+    id: '66b000000000000000000003',
     name: 'Noodle House',
     description: 'Authentic noodle soups.',
     rating: 4.9,
@@ -89,6 +89,7 @@ export default function RestaurantListScreen({ navigation }) {
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [cartCount, setCartCount] = useState(0);
+  const [favoriteIds, setFavoriteIds] = useState([]);
 
   const refreshCartCount = async () => {
     try {
@@ -100,11 +101,31 @@ export default function RestaurantListScreen({ navigation }) {
     }
   };
 
+  const refreshFavorites = async () => {
+    try {
+      const favs = await getFavorites();
+      const favRestIds = (favs || []).filter(f => f.restaurant).map(f => f.restaurant._id);
+      setFavoriteIds(favRestIds);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   useFocusEffect(
     React.useCallback(() => {
       refreshCartCount();
+      refreshFavorites();
     }, [])
   );
+
+  const handleToggleFav = async (restId) => {
+    try {
+      await toggleFavorite(null, restId);
+      refreshFavorites();
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const filteredRestaurants = RESTAURANTS.filter(r => {
     const matchCategory = activeCategory === 'All' || r.category === activeCategory;
@@ -172,8 +193,13 @@ export default function RestaurantListScreen({ navigation }) {
             >
               <View style={styles.imageContainer}>
                 <Image source={{ uri: item.image }} style={styles.image} />
-                <TouchableOpacity style={styles.heartIcon}>
-                   <Text>🤍</Text>
+                <TouchableOpacity 
+                  style={styles.heartIcon}
+                  onPress={() => handleToggleFav(item.id)}
+                >
+                   <Text style={{color: favoriteIds.includes(item.id) ? RED : '#ccc', fontSize: 20, marginTop: -2}}>
+                     {favoriteIds.includes(item.id) ? '♥' : '♡'}
+                   </Text>
                 </TouchableOpacity>
               </View>
               <View style={styles.infoContainer}>
@@ -208,11 +234,11 @@ export default function RestaurantListScreen({ navigation }) {
            <Text style={[styles.navIcon, {color: RED}]}>🔍</Text>
            <Text style={[styles.navLabel, {color: RED}]}>Search</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-           <Text style={styles.navIcon}>🤍</Text>
-           <Text style={styles.navLabel}>Favorites</Text>
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Favorites')}>
+          <Text style={styles.navIcon}>♥</Text>
+          <Text style={styles.navLabel}>Favorites</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('OrderHistory')}>
            <Text style={styles.navIcon}>📋</Text>
            <Text style={styles.navLabel}>Orders</Text>
         </TouchableOpacity>

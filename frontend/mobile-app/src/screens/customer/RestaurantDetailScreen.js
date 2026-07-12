@@ -14,6 +14,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { addItemToCart, clearCart, getMyCart } from '../../services/customerOrderApi';
 import { clearLocalCartItems } from '../../services/localCartStorage';
+import api from '../../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -173,6 +174,7 @@ export default function RestaurantDetailScreen({ navigation, route }) {
     delivery: passedRestaurant.delivery || 'Free delivery',
     coverImage: passedRestaurant.image || 'https://images.unsplash.com/photo-1544148103-0773bf10d330?w=800&q=80',
   } : {
+    id: '66b000000000000000000004',
     name: 'Lumina Osteria',
     rating: 4.9,
     time: '35-45 min',
@@ -181,8 +183,7 @@ export default function RestaurantDetailScreen({ navigation, route }) {
     coverImage: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=800&q=80',
   };
 
-  const filteredMenuItems = ALL_MENU_ITEMS.filter(item => item.restaurantName === currentRestaurant.name);
-  const displayMenuItems = filteredMenuItems.length > 0 ? filteredMenuItems : ALL_MENU_ITEMS.slice(0, 4);
+  const [displayMenuItems, setDisplayMenuItems] = useState([]);
   const [activeCategory, setActiveCategory] = useState('Popular');
   const [cartCount, setCartCount] = useState(1);
   const [cartTotal, setCartTotal] = useState(18.00);
@@ -198,10 +199,28 @@ export default function RestaurantDetailScreen({ navigation, route }) {
     }
   };
 
+  const fetchFoods = async () => {
+    try {
+      const response = await api.get(`/customer/restaurants/${currentRestaurant.id}/foods`);
+      if (response.data.success) {
+        // map backend id to match our frontend usage
+        const backendFoods = response.data.data.map(f => ({
+          ...f,
+          id: f._id,
+          tags: f.category ? [f.category] : [],
+        }));
+        setDisplayMenuItems(backendFoods);
+      }
+    } catch (error) {
+      console.log('Error fetching foods:', error);
+    }
+  };
+
   useFocusEffect(
     React.useCallback(() => {
       refreshCartCount();
-    }, [])
+      fetchFoods();
+    }, [currentRestaurant.id])
   );
 
   const addBackendCartItem = async (item) => {
@@ -247,6 +266,20 @@ export default function RestaurantDetailScreen({ navigation, route }) {
     }
   };
 
+  const handleChatWithOwner = async () => {
+    try {
+      const response = await api.post('/chats', { restaurantId: currentRestaurant.id });
+      if (response.data.success) {
+        navigation.navigate('ChatDetail', { 
+          chatId: response.data.data._id, 
+          name: currentRestaurant.name 
+        });
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Could not connect to owner.');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -255,14 +288,19 @@ export default function RestaurantDetailScreen({ navigation, route }) {
           <Text style={{fontSize: 20, color: '#222'}}>{'<-'}</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Epicurean</Text>
-        <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Cart')}>
-          <Text style={{fontSize: 20}}>🛒</Text>
-          {cartCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{cartCount}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+          <TouchableOpacity style={styles.headerIcon} onPress={handleChatWithOwner}>
+            <Text style={{fontSize: 20}}>💬</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.headerIcon, {marginLeft: 15}]} onPress={() => navigation.navigate('Cart')}>
+            <Text style={{fontSize: 20}}>🛒</Text>
+            {cartCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{cartCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -284,6 +322,10 @@ export default function RestaurantDetailScreen({ navigation, route }) {
             <Text style={styles.metaText}>{currentRestaurant.delivery}</Text>
           </View>
           <Text style={styles.description}>{currentRestaurant.description}</Text>
+          <TouchableOpacity style={styles.chatOwnerButton} onPress={handleChatWithOwner}>
+            <Text style={styles.chatOwnerIcon}>💬</Text>
+            <Text style={styles.chatOwnerText}>Message Owner</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Categories */}
@@ -454,6 +496,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
+    marginBottom: 15,
+  },
+  chatOwnerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fbe8e8',
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  chatOwnerIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  chatOwnerText: {
+    color: RED,
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   categoriesScroll: {
     paddingLeft: 20,

@@ -23,8 +23,8 @@ const GRAY = '#888';
 
 const CATEGORIES = ['Featured', 'Vegan', 'Gluten-Free', 'Sushi', 'Burger'];
 const POPULAR_RESTAURANTS = [
-  { id: 1, name: 'Akira Omakase', category: 'Japanese', price: '$$$$', rating: 4.9, time: '30-45 min', color: '#e8c9b8', image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=500&q=80' },
-  { id: 2, name: 'Lumina Osteria', category: 'Italian', price: '$$', rating: 4.8, time: '20-30 min', color: '#e0c090', image: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=500&q=80' },
+  { id: '66b000000000000000000005', name: 'Akira Omakase', category: 'Japanese', price: '$$$$', rating: 4.9, time: '30-45 min', color: '#e8c9b8', image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=500&q=80' },
+  { id: '66b000000000000000000004', name: 'Lumina Osteria', category: 'Italian', price: '$$', rating: 4.8, time: '20-30 min', color: '#e0c090', image: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=500&q=80' },
 ];
 
 const RECOMMENDED = [
@@ -379,12 +379,12 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.navIcon}>{'\uD83D\uDD0D'}</Text>
           <Text style={styles.navLabel}>Search</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Text style={styles.navIcon}>{'\u2661'}</Text>
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Favorites')}>
+          <Text style={styles.navIcon}>♥</Text>
           <Text style={styles.navLabel}>Favorites</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Text style={styles.navIcon}>{'\uD83D\uDCCB'}</Text>
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('OrderHistory')}>
+          <Text style={styles.navIcon}>📋</Text>
           <Text style={styles.navLabel}>Orders</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={handleAvatarPress}>

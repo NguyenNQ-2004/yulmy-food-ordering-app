@@ -233,13 +233,13 @@ export default function SearchScreen({ navigation }) {
            <Text style={[styles.navIcon, {color: RED}]}>🔍</Text>
            <Text style={[styles.navLabel, {color: RED}]}>Search</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-           <Text style={styles.navIcon}>🤍</Text>
-           <Text style={styles.navLabel}>Favorites</Text>
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Favorites')}>
+          <Text style={styles.navIcon}>♥</Text>
+          <Text style={styles.navLabel}>Favorites</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-           <Text style={styles.navIcon}>📋</Text>
-           <Text style={styles.navLabel}>Orders</Text>
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('OrderHistory')}>
+          <Text style={styles.navIcon}>📋</Text>
+          <Text style={styles.navLabel}>Orders</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem}>
            <Text style={styles.navIcon}>👤</Text>
