@@ -374,9 +374,10 @@ export default function HomeScreen({ navigation }) {
         <TouchableOpacity style={styles.navItem}>
           <Text style={[styles.navIcon, styles.navActive]}>{'\uD83C\uDFE0'}</Text>
           <Text style={[styles.navLabel, styles.navActive]}>Home</Text>
+          <View style={styles.activeDot} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Search')}>
-          <Text style={styles.navIcon}>{'\uD83D\uDD0D'}</Text>
+          <Text style={styles.navIcon}>🔍</Text>
           <Text style={styles.navLabel}>Search</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Favorites')}>
@@ -387,8 +388,8 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.navIcon}>📋</Text>
           <Text style={styles.navLabel}>Orders</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={handleAvatarPress}>
-          <Text style={styles.navIcon}>{'\uD83D\uDC64'}</Text>
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Profile')}>
+          <Text style={styles.navIcon}>👤</Text>
           <Text style={styles.navLabel}>Profile</Text>
         </TouchableOpacity>
       </View>
@@ -827,6 +828,14 @@ const styles = StyleSheet.create({
   },
   navActive: {
     color: RED,
+  },
+  activeDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: RED,
+    position: 'absolute',
+    bottom: -6,
   },
   modalOverlay: {
     flex: 1,

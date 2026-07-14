@@ -22,7 +22,7 @@ const GRAY = '#888';
 const LIGHT_GRAY = '#f0f0f0';
 
 export default function OrderHistoryScreen({ navigation }) {
-  const [activeTab, setActiveTab] = useState('Active');
+  const [activeTab, setActiveTab] = useState('Past'); // Mock shows "Past" active by default
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -36,9 +36,7 @@ export default function OrderHistoryScreen({ navigation }) {
     setIsLoading(true);
     try {
       const data = await getMyOrders();
-      // handle both { orders: [] } and [] just in case the backend hasn't reloaded
       const ordersArray = Array.isArray(data) ? data : (data?.orders || []);
-      // sort by creation date descending
       const sortedData = ordersArray.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setOrders(sortedData);
     } catch (error) {
@@ -48,104 +46,119 @@ export default function OrderHistoryScreen({ navigation }) {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Pending':
-      case 'Confirmed': return '#FFA500';
-      case 'Preparing': return '#3b82f6';
-      case 'Delivering': return '#8b5cf6';
-      case 'Completed': return '#10b981';
-      case 'Cancelled': return '#ef4444';
-      default: return GRAY;
-    }
-  };
-
   const getStatusText = (status) => {
+    if (status === 'Completed') return 'Delivered';
     return status;
   };
 
-  // Filter orders based on tabs
   const activeStatuses = ['Pending', 'Confirmed', 'Preparing', 'Delivering'];
   
-  const activeOrders = orders.filter(o => activeStatuses.includes(o.orderStatus));
-  const completedOrders = orders.filter(o => o.orderStatus === 'Completed');
-  const cancelledOrders = orders.filter(o => o.orderStatus === 'Cancelled');
+  const currentOrders = orders.filter(o => activeStatuses.includes(o.orderStatus));
+  const pastOrders = orders.filter(o => ['Completed', 'Cancelled'].includes(o.orderStatus));
 
   let displayOrders = [];
-  if (activeTab === 'Active') displayOrders = activeOrders;
-  else if (activeTab === 'Completed') displayOrders = completedOrders;
-  else if (activeTab === 'Cancelled') displayOrders = cancelledOrders;
+  if (activeTab === 'Current') displayOrders = currentOrders;
+  else if (activeTab === 'Past') displayOrders = pastOrders;
 
   const renderOrderCard = (order) => {
     const items = order.items || [];
     const totalItems = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
     const firstItemImage = items.length > 0 && items[0].food?.image 
       ? items[0].food.image 
-      : 'https://via.placeholder.com/150';
+      : 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=150';
       
-    // Date formatting
     const orderDate = new Date(order.createdAt);
-    const dateString = orderDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const dateString = orderDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const timeString = orderDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
+    const isDelivered = order.orderStatus === 'Completed';
+
     return (
-      <TouchableOpacity 
-        key={order._id} 
-        style={styles.card}
-        activeOpacity={0.9}
-        onPress={() => {
-          // If active order, could navigate to an OrderTrackingScreen, but for now we'll just show it here.
-          // Or we can navigate to OrderSuccess for completed? 
-          // Let's just log for now or show alert.
-        }}
-      >
-        <View style={styles.cardHeader}>
-          <View style={styles.restaurantInfo}>
-            <Image source={{ uri: firstItemImage }} style={styles.restaurantLogo} />
-            <View>
-              <Text style={styles.restaurantName}>{order.restaurant?.name || 'Restaurant'}</Text>
-              <Text style={styles.dateText}>{dateString} • {timeString}</Text>
+      <View key={order._id} style={styles.card}>
+        <TouchableOpacity 
+          style={styles.cardMainContent}
+          activeOpacity={0.8}
+          onPress={() => {
+            if (activeStatuses.includes(order.orderStatus)) {
+              navigation.navigate('Tracking', { orderId: order._id });
+            }
+          }}
+        >
+          {/* Left: Food Image */}
+          <Image source={{ uri: firstItemImage }} style={styles.cardImage} />
+
+          {/* Right: Info */}
+          <View style={styles.cardInfo}>
+            {/* Row 1: Restaurant Name & Status Badge */}
+            <View style={styles.row1}>
+              <Text style={styles.restaurantName} numberOfLines={1}>
+                {order.restaurant?.name || 'Restaurant'}
+              </Text>
+              <View style={[
+                styles.statusBadge, 
+                isDelivered ? styles.deliveredBadge : styles.otherStatusBadge
+              ]}>
+                <Text style={[
+                  styles.statusText, 
+                  isDelivered ? styles.deliveredText : styles.otherStatusText
+                ]}>
+                  {getStatusText(order.orderStatus)}
+                </Text>
+              </View>
             </View>
-          </View>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.orderStatus) + '20' }]}>
-            <Text style={[styles.statusText, { color: getStatusColor(order.orderStatus) }]}>
-              {getStatusText(order.orderStatus)}
-            </Text>
-          </View>
-        </View>
 
-        <View style={styles.divider} />
-
-        <View style={styles.orderDetails}>
-          <View>
-            <Text style={styles.itemsText}>
-              {totalItems} {totalItems === 1 ? 'Item' : 'Items'}
-            </Text>
-            <Text style={styles.itemsList} numberOfLines={1}>
+            {/* Row 2: Items Summary */}
+            <Text style={styles.itemsSummary} numberOfLines={1}>
               {items.map(i => `${i.quantity || 1}x ${i.food?.name || 'Item'}`).join(', ')}
             </Text>
-          </View>
-          <Text style={styles.totalPrice}>${(order.totalAmount || 0).toFixed(2)}</Text>
-        </View>
 
-        {activeTab === 'Active' && (
+            {/* Row 3: Date/Time & Price */}
+            <View style={styles.row3}>
+              <Text style={styles.dateTimeText}>
+                {dateString} • {timeString}
+              </Text>
+              <Text style={styles.priceText}>
+                ${(order.totalAmount || 0).toFixed(2)}
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Footer Actions */}
+        {activeStatuses.includes(order.orderStatus) && (
           <View style={styles.cardFooter}>
-            <TouchableOpacity style={styles.trackButton}>
+            <TouchableOpacity 
+              style={styles.trackButton}
+              onPress={() => navigation.navigate('Tracking', { orderId: order._id })}
+            >
               <Text style={styles.trackButtonText}>Track Order</Text>
             </TouchableOpacity>
           </View>
         )}
-        {activeTab === 'Completed' && (
+        {order.orderStatus === 'Completed' && (
           <View style={styles.cardFooter}>
-            <TouchableOpacity style={styles.reorderButton}>
+            <TouchableOpacity 
+              style={styles.reorderButton}
+              onPress={() => {
+                // Navigate to restaurant details to reorder
+                if (order.restaurant?._id) {
+                  navigation.navigate('RestaurantDetail', { restaurantId: order.restaurant._id });
+                } else {
+                  navigation.navigate('Home');
+                }
+              }}
+            >
               <Text style={styles.reorderButtonText}>Reorder</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.rateButton}>
+            <TouchableOpacity 
+              style={styles.rateButton}
+              onPress={() => navigation.navigate('Review', { orderId: order._id, restaurantName: order.restaurant?.name })}
+            >
               <Text style={styles.rateButtonText}>Rate</Text>
             </TouchableOpacity>
           </View>
         )}
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -153,29 +166,43 @@ export default function OrderHistoryScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Orders</Text>
-        <TouchableOpacity style={styles.searchIconBtn}>
-          <Text style={styles.searchIcon}>🔍</Text>
+        <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Home')}>
+          <Text style={styles.backIcon}>{'<-'}</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Epicurean</Text>
+        <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Cart')}>
+          <Text style={styles.headerEmoji}>👜</Text>
         </TouchableOpacity>
       </View>
 
+      {/* Large Page Title */}
+      <Text style={styles.pageTitle}>Order History</Text>
+
       {/* Tabs */}
       <View style={styles.tabContainer}>
-        {['Active', 'Completed', 'Cancelled'].map((tab) => (
-          <TouchableOpacity 
-            key={tab}
-            style={[styles.tabButton, activeTab === tab && styles.activeTabButton]}
-            onPress={() => setActiveTab(tab)}
-          >
-            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-              {tab}
-            </Text>
-            {/* Show dot indicator if there are active orders */}
-            {tab === 'Active' && activeOrders.length > 0 && (
-              <View style={styles.notificationDot} />
-            )}
-          </TouchableOpacity>
-        ))}
+        <TouchableOpacity 
+          style={[styles.tabButton, activeTab === 'Past' ? styles.activeTab : styles.inactiveTab]}
+          onPress={() => setActiveTab('Past')}
+          activeOpacity={0.9}
+        >
+          <Text style={[styles.tabText, activeTab === 'Past' ? styles.activeTabText : styles.inactiveTabText]}>
+            Past
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.tabButton, activeTab === 'Current' ? styles.activeTab : styles.inactiveTab]}
+          onPress={() => setActiveTab('Current')}
+          activeOpacity={0.9}
+        >
+          <Text style={[styles.tabText, activeTab === 'Current' ? styles.activeTabText : styles.inactiveTabText]}>
+            Current
+          </Text>
+          {currentOrders.length > 0 && (
+            <View style={styles.badgeCount}>
+              <Text style={styles.badgeCountText}>{currentOrders.length}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Content */}
@@ -190,24 +217,20 @@ export default function OrderHistoryScreen({ navigation }) {
         ) : (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyEmoji}>
-              {activeTab === 'Active' ? '🛵' : activeTab === 'Completed' ? '🍽️' : '📝'}
+              {activeTab === 'Current' ? '🛵' : '🍽️'}
             </Text>
             <Text style={styles.emptyTitle}>No {activeTab.toLowerCase()} orders</Text>
             <Text style={styles.emptyText}>
-              {activeTab === 'Active' 
-                ? "You don't have any active orders right now." 
-                : activeTab === 'Completed' 
-                  ? "You haven't completed any orders yet."
-                  : "You have no cancelled orders."}
+              {activeTab === 'Current' 
+                ? "You don't have any ongoing orders right now." 
+                : "You haven't completed any orders yet."}
             </Text>
-            {activeTab === 'Active' && (
-              <TouchableOpacity 
-                style={styles.browseButton}
-                onPress={() => navigation.navigate('Home')}
-              >
-                <Text style={styles.browseButtonText}>Browse Restaurants</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity 
+              style={styles.browseButton}
+              onPress={() => navigation.navigate('Home')}
+            >
+              <Text style={styles.browseButtonText}>Browse Restaurants</Text>
+            </TouchableOpacity>
           </View>
         )}
         <View style={styles.bottomPadding} />
@@ -230,8 +253,9 @@ export default function OrderHistoryScreen({ navigation }) {
         <TouchableOpacity style={styles.navItem}>
           <Text style={[styles.navIcon, styles.navActiveIcon]}>📋</Text>
           <Text style={styles.navActiveText}>Orders</Text>
+          <View style={styles.activeDot} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Profile')}>
           <Text style={styles.navIcon}>👤</Text>
           <Text style={styles.navLabel}>Profile</Text>
         </TouchableOpacity>
@@ -247,231 +271,242 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 15,
-    paddingBottom: 20,
+    paddingTop: 10,
+    paddingBottom: 10,
+    backgroundColor: LIGHT_BG,
+  },
+  headerIcon: {
+    padding: 5,
+  },
+  backIcon: {
+    fontSize: 20,
+    color: RED,
+  },
+  headerEmoji: {
+    fontSize: 20,
+    color: RED,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: RED,
+  },
+  pageTitle: {
+    fontSize: 28,
     fontWeight: '800',
     color: '#222',
-  },
-  searchIconBtn: {
-    padding: 5,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  searchIcon: {
-    fontSize: 18,
-    color: '#222',
+    marginHorizontal: 24,
+    marginTop: 10,
+    marginBottom: 15,
   },
   tabContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0e5e3',
+    paddingHorizontal: 24,
     marginBottom: 20,
+    gap: 12,
   },
   tabButton: {
-    paddingVertical: 12,
-    marginRight: 30,
-    position: 'relative',
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  activeTabButton: {
-    borderBottomWidth: 2,
-    borderBottomColor: RED,
-  },
-  tabText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: GRAY,
-  },
-  activeTabText: {
-    color: RED,
-  },
-  notificationDot: {
-    position: 'absolute',
-    top: 10,
-    right: -10,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  activeTab: {
     backgroundColor: RED,
   },
+  inactiveTab: {
+    backgroundColor: '#FFF0F2',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  activeTabText: {
+    color: '#fff',
+  },
+  inactiveTabText: {
+    color: RED,
+  },
+  badgeCount: {
+    backgroundColor: RED,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    marginLeft: 6,
+    borderWidth: 1,
+    borderColor: '#fff',
+  },
+  badgeCountText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
   },
   card: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
+    padding: 14,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#f0e5e3',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
-      default: {
-        boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.05)',
-      },
-    }),
+    borderColor: '#fde8eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  cardHeader: {
+  cardMainContent: {
+    flexDirection: 'row',
+  },
+  cardImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 12,
+    backgroundColor: '#f0f0f0',
+    marginRight: 14,
+  },
+  cardInfo: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  row1: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  restaurantInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  restaurantLogo: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    marginRight: 12,
-    backgroundColor: '#f0f0f0',
+    marginBottom: 4,
   },
   restaurantName: {
     fontSize: 16,
     fontWeight: '700',
     color: '#222',
-    marginBottom: 2,
-  },
-  dateText: {
-    fontSize: 12,
-    color: GRAY,
+    flex: 1,
+    marginRight: 8,
   },
   statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  deliveredBadge: {
+    backgroundColor: '#FFF0F2',
+  },
+  otherStatusBadge: {
+    backgroundColor: '#FFF8EB',
   },
   statusText: {
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'capitalize',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#f0e5e3',
-    marginVertical: 16,
+  deliveredText: {
+    color: RED,
   },
-  orderDetails: {
+  otherStatusText: {
+    color: '#D97706',
+  },
+  itemsSummary: {
+    fontSize: 13,
+    color: GRAY,
+    marginBottom: 6,
+  },
+  row3: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  itemsText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#222',
-    marginBottom: 4,
-  },
-  itemsList: {
-    fontSize: 13,
+  dateTimeText: {
+    fontSize: 12,
     color: GRAY,
-    maxWidth: width * 0.5,
   },
-  totalPrice: {
-    fontSize: 18,
+  priceText: {
+    fontSize: 16,
     fontWeight: '800',
-    color: RED,
+    color: '#222',
   },
   cardFooter: {
     flexDirection: 'row',
-    marginTop: 16,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#fde8eb',
     gap: 10,
   },
   trackButton: {
     flex: 1,
     backgroundColor: RED,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
   },
   trackButtonText: {
     color: '#fff',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 13,
   },
   reorderButton: {
     flex: 1,
-    backgroundColor: '#fbe8e8',
-    paddingVertical: 12,
+    backgroundColor: '#FFF0F2',
+    paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
   },
   reorderButtonText: {
     color: RED,
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 13,
   },
   rateButton: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
-    paddingVertical: 12,
+    backgroundColor: '#f5f5f5',
+    paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
   },
   rateButtonText: {
-    color: '#222',
+    color: '#444',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 13,
   },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 60,
+    paddingTop: 40,
   },
   emptyEmoji: {
-    fontSize: 60,
-    marginBottom: 20,
+    fontSize: 50,
+    marginBottom: 15,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#222',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   emptyText: {
-    fontSize: 15,
+    fontSize: 14,
     color: GRAY,
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 20,
     paddingHorizontal: 20,
   },
   browseButton: {
     backgroundColor: RED,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
   },
   browseButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
   },
   bottomPadding: {
-    height: 100,
+    height: 80,
   },
   bottomNav: {
     flexDirection: 'row',
@@ -490,6 +525,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   navIcon: {
     fontSize: 20,
@@ -509,5 +545,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     marginTop: 2,
+  },
+  activeDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: RED,
+    position: 'absolute',
+    bottom: 2,
   },
 });

@@ -31,6 +31,7 @@ export function AuthProvider({ children }) {
         if (savedUser && savedToken) {
           setCurrentUser(JSON.parse(savedUser));
           setToken(savedToken);
+          api.setClientToken(savedToken);
         }
       } catch (error) {
         await AsyncStorage.multiRemove(['user', 'token']);
@@ -45,6 +46,7 @@ export function AuthProvider({ children }) {
         if (error.response?.status === 401) {
           setCurrentUser(null);
           setToken(null);
+          api.setClientToken(null);
           await AsyncStorage.multiRemove(['user', 'token']);
         }
         return Promise.reject(error);
@@ -68,6 +70,7 @@ export function AuthProvider({ children }) {
 
       setCurrentUser(userData);
       setToken(userToken);
+      api.setClientToken(userToken);
 
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       await AsyncStorage.setItem('token', userToken);
@@ -87,6 +90,7 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     setCurrentUser(null);
     setToken(null);
+    api.setClientToken(null);
 
     await AsyncStorage.removeItem('user');
     await AsyncStorage.removeItem('token');

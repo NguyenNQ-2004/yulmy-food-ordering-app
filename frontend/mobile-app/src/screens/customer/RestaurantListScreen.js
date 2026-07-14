@@ -233,6 +233,7 @@ export default function RestaurantListScreen({ navigation }) {
         <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Search')}>
            <Text style={[styles.navIcon, {color: RED}]}>🔍</Text>
            <Text style={[styles.navLabel, {color: RED}]}>Search</Text>
+           <View style={styles.activeDot} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Favorites')}>
           <Text style={styles.navIcon}>♥</Text>
@@ -242,7 +243,7 @@ export default function RestaurantListScreen({ navigation }) {
            <Text style={styles.navIcon}>📋</Text>
            <Text style={styles.navLabel}>Orders</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Profile')}>
            <Text style={styles.navIcon}>👤</Text>
            <Text style={styles.navLabel}>Profile</Text>
         </TouchableOpacity>
@@ -458,5 +459,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#999',
     fontWeight: '600',
+  },
+  activeDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: RED,
+    position: 'absolute',
+    bottom: -8,
   },
 });
