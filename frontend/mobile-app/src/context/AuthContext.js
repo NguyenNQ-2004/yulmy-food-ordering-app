@@ -1,6 +1,12 @@
 import React, { createContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert, Platform } from 'react-native';
+import {
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import api from '../services/api';
 
@@ -9,6 +15,8 @@ export const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [logoutMessage, setLogoutMessage] = useState('Do you want to logout?');
 
   const persistUserSession = async (userData, userToken = token) => {
     setCurrentUser(userData);
@@ -97,21 +105,17 @@ export function AuthProvider({ children }) {
   };
 
   const confirmLogout = (message = 'Do you want to logout?') => {
-    if (Platform.OS === 'web') {
-      const confirmed =
-        typeof window === 'undefined' ? true : window.confirm(message);
+    setLogoutMessage(message);
+    setLogoutModalVisible(true);
+  };
 
-      if (confirmed) {
-        logout();
-      }
+  const closeLogoutModal = () => {
+    setLogoutModalVisible(false);
+  };
 
-      return;
-    }
-
-    Alert.alert('Logout', message, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: logout },
-    ]);
+  const handleConfirmLogout = async () => {
+    setLogoutModalVisible(false);
+    await logout();
   };
 
   const register = async (fullName, email, password, phone) => {
@@ -227,6 +231,100 @@ export function AuthProvider({ children }) {
       }}
     >
       {children}
+
+      <Modal
+        visible={logoutModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeLogoutModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Confirm Logout</Text>
+            <Text style={styles.modalMessage}>{logoutMessage}</Text>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                activeOpacity={0.85}
+                onPress={closeLogoutModal}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                activeOpacity={0.9}
+                onPress={handleConfirmLogout}
+              >
+                <Text style={styles.confirmButtonText}>Log Out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </AuthContext.Provider>
   );
 }
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(39, 24, 22, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#271816',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: '#5b403d',
+    lineHeight: 20,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    borderWidth: 1,
+    borderColor: '#f0e5e3',
+    backgroundColor: '#fff',
+    marginRight: 8,
+  },
+  confirmButton: {
+    backgroundColor: '#B11226',
+    marginLeft: 8,
+  },
+  cancelButtonText: {
+    color: '#8f6f6c',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  confirmButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+});

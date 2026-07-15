@@ -130,7 +130,7 @@ export default function HomeScreen({ navigation }) {
 
   const handleLogout = () => {
     setShowProfileMenu(false);
-    logout();
+    setShowLogoutModal(true);
   };
 
   const handleOpenCart = () => {

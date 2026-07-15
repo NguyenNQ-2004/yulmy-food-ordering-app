@@ -51,7 +51,15 @@ const normalizeUser = (user) => ({
   role: user.role,
   status: user.status,
   phone: user.phone || '',
+  avatarUrl: user.avatar || '',
   address: user.address || '',
+  preferences: {
+    twoFactorEnabled: Boolean(user.preferences?.twoFactorEnabled),
+    pushNotificationsEnabled: Boolean(user.preferences?.pushNotificationsEnabled),
+    emailReportsEnabled: Boolean(user.preferences?.emailReportsEnabled),
+  },
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt,
   joinedAt: new Date(user.createdAt).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -67,23 +75,75 @@ const normalizeUser = (user) => ({
 
 const normalizeOrder = (order) => ({
   id: order._id,
-  code: String(order._id).slice(-6).toUpperCase(),
+  code: order.orderCode || String(order._id).slice(-6).toUpperCase(),
   customerName: order.user?.fullName || 'Unknown User',
   customerEmail: order.user?.email || '',
+  customerPhone: order.user?.phone || order.phone || '',
   restaurantName: order.restaurant?.name || 'Unknown Restaurant',
+  receiverName: order.receiverName || order.user?.fullName || 'Unknown Receiver',
   deliveryAddress: order.deliveryAddress,
+  phone: order.phone || '',
+  itemsAmount: Number(order.itemsAmount || 0),
+  itemsAmountLabel: `$${Number(order.itemsAmount || 0).toFixed(2)}`,
+  deliveryFee: Number(order.deliveryFee || 0),
+  deliveryFeeLabel: `$${Number(order.deliveryFee || 0).toFixed(2)}`,
+  discountAmount: Number(order.discountAmount || 0),
+  discountAmountLabel: `$${Number(order.discountAmount || 0).toFixed(2)}`,
   totalAmount: Number(order.totalAmount || 0),
   totalAmountLabel: `$${Number(order.totalAmount || 0).toFixed(2)}`,
   paymentMethod: order.paymentMethod,
   paymentStatus: order.paymentStatus,
+  payment: order.payment
+    ? {
+        id: order.payment.id,
+        amount: Number(order.payment.amount || 0),
+        amountLabel: order.payment.amountLabel || `$${Number(order.payment.amount || 0).toFixed(2)}`,
+        method: order.payment.method || order.paymentMethod,
+        status: order.payment.status || '',
+        transactionCode: order.payment.transactionCode || '',
+        paidAt: order.payment.paidAt || null,
+        failureReason: order.payment.failureReason || '',
+      }
+    : null,
   orderStatus: order.orderStatus,
+  allowedNextStatuses: Array.isArray(order.allowedNextStatuses)
+    ? order.allowedNextStatuses
+    : [],
   note: order.note || '',
   itemCount: order.itemCount || 0,
+  createdAt: order.createdAt,
+  updatedAt: order.updatedAt,
   createdAtLabel: new Date(order.createdAt).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   }),
+  updatedAtLabel: order.updatedAt
+    ? new Date(order.updatedAt).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    : '',
+});
+
+const normalizeOrderDetail = (order) => ({
+  ...normalizeOrder(order),
+  restaurantAddress: order.restaurant?.address || '',
+  restaurantCategory: order.restaurant?.category || '',
+  customerAddress: order.user?.address || '',
+  items: safeArray(order.items).map((item) => ({
+    id: item.id || item._id,
+    foodId: item.foodId || item.food?._id || '',
+    foodName: item.foodName || item.food?.name || 'Unknown Food',
+    foodImage: item.foodImage || item.food?.image || '',
+    quantity: Number(item.quantity || 0),
+    price: Number(item.price || 0),
+    priceLabel: item.priceLabel || `$${Number(item.price || 0).toFixed(2)}`,
+    subtotal: Number(item.subtotal || 0),
+    subtotalLabel:
+      item.subtotalLabel || `$${Number(item.subtotal || 0).toFixed(2)}`,
+  })),
 });
 
 const normalizeReview = (review) => ({
@@ -328,11 +388,46 @@ export function AdminProvider({ children }) {
     setUsers((currentUsers) =>
       currentUsers.map((user) => (user.id === userId ? updatedUser : user))
     );
+    return updatedUser;
+  };
+
+  const createUser = async (payload) => {
+    const response = await api.post('/admin/users', payload);
+    const newUser = normalizeUser(response.data.data);
+    setUsers((currentUsers) => [newUser, ...currentUsers]);
+    await loadDashboard();
+    return newUser;
+  };
+
+  const updateUser = async (userId, payload) => {
+    const response = await api.put(`/admin/users/${userId}`, payload);
+    const updatedUser = normalizeUser(response.data.data);
+    setUsers((currentUsers) =>
+      currentUsers.map((user) => (user.id === userId ? updatedUser : user))
+    );
+    return updatedUser;
+  };
+
+  const deleteUser = async (userId) => {
+    const response = await api.delete(`/admin/users/${userId}`);
+    setUsers((currentUsers) => currentUsers.filter((user) => user.id !== userId));
+    await loadDashboard();
+    return response.data;
   };
 
   const updateOrderStatus = async (orderId, orderStatus) => {
-    await api.patch(`/admin/orders/${orderId}/status`, { orderStatus });
-    await Promise.all([loadOrders(), loadDashboard()]);
+    const response = await api.patch(`/admin/orders/${orderId}/status`, { orderStatus });
+    const updatedOrder = normalizeOrderDetail(response.data.data);
+    setOrders((currentOrders) =>
+      currentOrders.map((order) => (order.id === orderId ? updatedOrder : order))
+    );
+    await loadDashboard();
+    return updatedOrder;
+  };
+
+  const getOrderDetail = async (orderId) => {
+    const response = await api.get(`/admin/orders/${orderId}`);
+    return normalizeOrderDetail(response.data.data);
   };
 
   const updateReviewStatus = async (reviewId, status) => {
@@ -366,6 +461,10 @@ export function AdminProvider({ children }) {
       updateRestaurant,
       deleteRestaurant,
       toggleUserStatus,
+      createUser,
+      updateUser,
+      deleteUser,
+      getOrderDetail,
       updateOrderStatus,
       updateReviewStatus,
     }),
