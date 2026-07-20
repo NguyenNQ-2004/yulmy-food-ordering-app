@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Image,
@@ -47,6 +47,7 @@ export default function AdminFoodFormScreen({ navigation, route }) {
   const [rating, setRating] = useState(
     currentFood?.rating ? String(currentFood.rating) : '4.8'
   );
+  const [saving, setSaving] = useState(false);
 
   const avatarLabel = currentUser?.fullName
     ? currentUser.fullName
@@ -67,11 +68,27 @@ export default function AdminFoodFormScreen({ navigation, route }) {
 
   const screenTitle = currentFood ? 'Edit Food' : 'Add Food';
 
+  useEffect(() => {
+    if (!restaurantId && restaurants.length > 0) {
+      setRestaurantId(currentFood?.restaurantId || restaurants[0].id);
+    }
+  }, [currentFood?.restaurantId, restaurantId, restaurants]);
+
+  useEffect(() => {
+    if (!category && foodCategories.length > 0) {
+      setCategory(currentFood?.category || foodCategories[0]);
+    }
+  }, [category, currentFood?.category, foodCategories]);
+
   const handleLogout = () => {
     confirmLogout('Do you want to logout from admin portal?');
   };
 
   const handleSave = async () => {
+    if (saving) {
+      return;
+    }
+
     if (!name.trim()) {
       Alert.alert('Missing name', 'Please enter a food name.');
       return;
@@ -99,29 +116,33 @@ export default function AdminFoodFormScreen({ navigation, route }) {
     };
 
     try {
+      setSaving(true);
+
       if (currentFood) {
         await updateFood(currentFood.id, payload);
-        Alert.alert('Saved', 'Food item updated successfully.', [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]);
+        navigation.navigate('AdminFoods', {
+          noticeTitle: 'Saved',
+          noticeMessage: 'Food item updated successfully.',
+          noticeType: 'success',
+          noticeAt: Date.now(),
+        });
         return;
       }
 
       await addFood(payload);
-      Alert.alert('Created', 'New food item has been added.', [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]);
+      navigation.navigate('AdminFoods', {
+        noticeTitle: 'Created',
+        noticeMessage: 'New food item has been added.',
+        noticeType: 'success',
+        noticeAt: Date.now(),
+      });
     } catch (requestError) {
       Alert.alert(
         'Save Failed',
         requestError.response?.data?.message || 'Could not save this food.'
       );
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -142,6 +163,15 @@ export default function AdminFoodFormScreen({ navigation, route }) {
           <Text style={styles.screenSubtitle}>
             Configure food details, visibility, and menu presentation.
           </Text>
+
+          {restaurants.length === 0 ? (
+            <View style={styles.warningCard}>
+              <Text style={styles.warningTitle}>No restaurants available</Text>
+              <Text style={styles.warningText}>
+                Create a restaurant first, then return here to create food.
+              </Text>
+            </View>
+          ) : null}
 
           <View style={styles.card}>
             <Text style={styles.sectionLabel}>Food Cover Photo</Text>
@@ -284,12 +314,20 @@ export default function AdminFoodFormScreen({ navigation, route }) {
           </View>
 
           <TouchableOpacity
-            style={styles.saveButton}
+            style={[
+              styles.saveButton,
+              (saving || restaurants.length === 0) && styles.saveButtonDisabled,
+            ]}
             activeOpacity={0.9}
+            disabled={saving || restaurants.length === 0}
             onPress={handleSave}
           >
             <Text style={styles.saveButtonText}>
-              {currentFood ? 'Update Food' : 'Create Food'}
+              {saving
+                ? 'Saving...'
+                : currentFood
+                  ? 'Update Food'
+                  : 'Create Food'}
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -325,6 +363,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     marginBottom: 18,
+  },
+  warningCard: {
+    backgroundColor: '#fff3e8',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f2d0b4',
+    padding: 14,
+    marginBottom: 16,
+  },
+  warningTitle: {
+    color: '#8d4c0d',
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  warningText: {
+    color: '#9a6a3a',
+    fontSize: 12,
+    lineHeight: 18,
   },
   card: {
     backgroundColor: CARD,
@@ -453,6 +510,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 20,
     elevation: 5,
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
   },
   saveButtonText: {
     color: '#fff',

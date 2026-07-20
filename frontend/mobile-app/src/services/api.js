@@ -21,11 +21,16 @@ const api = axios.create({
   timeout: 15000,
 });
 
+let authToken = null;
+api.setClientToken = (token) => {
+  authToken = token;
+};
+
 // Request interceptor: attach JWT token automatically
 api.interceptors.request.use(
   async (config) => {
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = authToken || await AsyncStorage.getItem('token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }

@@ -1,7 +1,7 @@
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   Image,
+  Modal,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -25,11 +25,16 @@ const MUTED = '#7b7b86';
 
 const FILTERS = ['all', 'live', 'inactive'];
 
-export default function AdminFoodsScreen({ navigation }) {
+export default function AdminFoodsScreen({ navigation, route }) {
   const { currentUser, confirmLogout } = useContext(AuthContext);
   const { foods, deleteFood, error, loading } = useContext(AdminContext);
   const [keyword, setKeyword] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
+  const [noticeVisible, setNoticeVisible] = useState(false);
+  const [noticeTitle, setNoticeTitle] = useState('');
+  const [noticeMessage, setNoticeMessage] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
   const avatarLabel = currentUser?.fullName
     ? currentUser.fullName
@@ -66,24 +71,54 @@ export default function AdminFoodsScreen({ navigation }) {
     confirmLogout('Do you want to logout from admin portal?');
   };
 
-  const handleDelete = (foodId, foodName) => {
-    Alert.alert('Delete Food', `Delete "${foodName}" from the list?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteFood(foodId);
-          } catch (requestError) {
-            Alert.alert(
-              'Delete Failed',
-              requestError.response?.data?.message || 'Could not delete this food.'
-            );
-          }
-        },
-      },
-    ]);
+  const openNotice = (title, message) => {
+    setNoticeTitle(title);
+    setNoticeMessage(message);
+    setNoticeVisible(true);
+  };
+
+  useEffect(() => {
+    if (route.params?.noticeAt) {
+      openNotice(
+        route.params.noticeTitle || 'Completed',
+        route.params.noticeMessage || 'Action completed successfully.'
+      );
+      navigation.setParams({
+        noticeAt: undefined,
+        noticeTitle: undefined,
+        noticeMessage: undefined,
+        noticeType: undefined,
+      });
+    }
+  }, [
+    navigation,
+    route.params?.noticeAt,
+    route.params?.noticeMessage,
+    route.params?.noticeTitle,
+  ]);
+
+  const handleDelete = (food) => {
+    setDeleteTarget(food);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget || deleteSubmitting) {
+      return;
+    }
+
+    try {
+      setDeleteSubmitting(true);
+      await deleteFood(deleteTarget.id);
+      setDeleteTarget(null);
+      openNotice('Deleted', `"${deleteTarget.name}" has been removed.`);
+    } catch (requestError) {
+      openNotice(
+        'Delete Failed',
+        requestError.response?.data?.message || 'Could not delete this food.'
+      );
+    } finally {
+      setDeleteSubmitting(false);
+    }
   };
 
   return (
@@ -172,7 +207,7 @@ export default function AdminFoodsScreen({ navigation }) {
                     <TouchableOpacity
                       style={styles.actionButton}
                       activeOpacity={0.85}
-                      onPress={() => handleDelete(food.id, food.name)}
+                      onPress={() => handleDelete(food)}
                     >
                       <Text style={styles.actionDelete}>DEL</Text>
                     </TouchableOpacity>
@@ -236,6 +271,65 @@ export default function AdminFoodsScreen({ navigation }) {
 
         <AdminBottomBar activeTab="foods" navigation={navigation} />
       </View>
+
+      <Modal
+        visible={Boolean(deleteTarget)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteTarget(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Delete Food</Text>
+            <Text style={styles.modalMessage}>
+              {deleteTarget
+                ? `Delete "${deleteTarget.name}" from the menu?`
+                : ''}
+            </Text>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                disabled={deleteSubmitting}
+                onPress={() => setDeleteTarget(null)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                disabled={deleteSubmitting}
+                onPress={handleConfirmDelete}
+              >
+                <Text style={styles.confirmButtonText}>
+                  {deleteSubmitting ? 'Deleting...' : 'Delete'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={noticeVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setNoticeVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>{noticeTitle}</Text>
+            <Text style={styles.modalMessage}>{noticeMessage}</Text>
+
+            <TouchableOpacity
+              style={[styles.modalButton, styles.confirmButton, styles.noticeButton]}
+              onPress={() => setNoticeVisible(false)}
+            >
+              <Text style={styles.confirmButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -478,5 +572,67 @@ const styles = StyleSheet.create({
     fontSize: 31,
     lineHeight: 31,
     marginTop: -2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(39, 24, 22, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#271816',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: '#5b403d',
+    lineHeight: 20,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    borderWidth: 1,
+    borderColor: '#f0e5e3',
+    backgroundColor: '#fff',
+    marginRight: 8,
+  },
+  confirmButton: {
+    backgroundColor: '#B11226',
+    marginLeft: 8,
+  },
+  cancelButtonText: {
+    color: '#8f6f6c',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  confirmButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  noticeButton: {
+    marginLeft: 0,
   },
 });

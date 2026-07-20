@@ -14,9 +14,12 @@ import VoucherScreen from '../screens/customer/VoucherScreen';
 import OrderSuccessScreen from '../screens/customer/OrderSuccessScreen';
 import FavoritesScreen from '../screens/customer/FavoritesScreen';
 import OrderHistoryScreen from '../screens/customer/OrderHistoryScreen';
+import ProfileScreen from '../screens/customer/ProfileScreen';
+import TrackingScreen from '../screens/customer/TrackingScreen';
+import ReviewScreen from '../screens/customer/ReviewScreen';
+import SettingsScreen from '../screens/customer/SettingsScreen';
 import ChatListScreen from '../screens/Chat/ChatListScreen';
 import ChatDetailScreen from '../screens/Chat/ChatDetailScreen';
-import ProfileScreen from '../screens/customer/ProfileScreen';
 import RateScreen from '../screens/customer/RateScreen';
 
 const Stack = createNativeStackNavigator();
@@ -90,6 +93,26 @@ export default function CustomerNavigator() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Tracking"
+        component={TrackingScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Review"
+        component={ReviewScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
         name="ChatList"
         component={ChatListScreen}
         options={{ headerShown: false }}
@@ -97,11 +120,6 @@ export default function CustomerNavigator() {
       <Stack.Screen
         name="ChatDetail"
         component={ChatDetailScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Profile"
-        component={ProfileScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

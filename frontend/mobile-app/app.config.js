@@ -1,8 +1,8 @@
-const os = require('os');
+import { networkInterfaces } from 'node:os';
 
 function getLocalIpAddress() {
   try {
-    const interfaces = os.networkInterfaces();
+    const interfaces = networkInterfaces();
     for (const devName in interfaces) {
       const iface = interfaces[devName];
       for (let i = 0; i < iface.length; i++) {

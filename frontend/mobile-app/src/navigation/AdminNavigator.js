@@ -10,6 +10,7 @@ import AdminRestaurantFormScreen from '../screens/admin/AdminRestaurantFormScree
 import AdminRestaurantsScreen from '../screens/admin/AdminRestaurantsScreen';
 import AdminReviewsScreen from '../screens/admin/AdminReviewsScreen';
 import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen';
+import AdminUserFormScreen from '../screens/admin/AdminUserFormScreen';
 import AdminUsersScreen from '../screens/admin/AdminUsersScreen';
 
 const Stack = createNativeStackNavigator();
@@ -29,6 +30,7 @@ export default function AdminNavigator() {
         <Stack.Screen name="AdminOrders" component={AdminOrdersScreen} />
         <Stack.Screen name="AdminReviews" component={AdminReviewsScreen} />
         <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
+        <Stack.Screen name="AdminUserForm" component={AdminUserFormScreen} />
         <Stack.Screen name="AdminSettings" component={AdminSettingsScreen} />
       </Stack.Navigator>
     </AdminProvider>

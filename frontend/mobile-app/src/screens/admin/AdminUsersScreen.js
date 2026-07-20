@@ -1,6 +1,7 @@
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
+  Modal,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -8,7 +9,6 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Platform,
 } from 'react-native';
 
 import AdminBottomBar from '../../components/admin/AdminBottomBar';
@@ -31,11 +31,41 @@ const ROLE_LABELS = {
   admin: 'Admin',
 };
 
-export default function AdminUsersScreen({ navigation }) {
+function StatChip({ label, value, active, onPress }) {
+  return (
+    <TouchableOpacity
+      style={[styles.statChip, active && styles.statChipActive]}
+      activeOpacity={0.85}
+      onPress={onPress}
+    >
+      <Text style={[styles.statChipValue, active && styles.statChipValueActive]}>
+        {value}
+      </Text>
+      <Text style={[styles.statChipLabel, active && styles.statChipLabelActive]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+export default function AdminUsersScreen({ navigation, route }) {
   const { currentUser, confirmLogout } = useContext(AuthContext);
-  const { users, toggleUserStatus, updateUserRole, deleteUser, error, loading } = useContext(AdminContext);
+  const { users, toggleUserStatus, deleteUser, loadUsers, error, loading } =
+    useContext(AdminContext);
   const [keyword, setKeyword] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [detailVisible, setDetailVisible] = useState(false);
+  const [statusTarget, setStatusTarget] = useState(null);
+  const [statusVisible, setStatusVisible] = useState(false);
+  const [statusSubmitting, setStatusSubmitting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteVisible, setDeleteVisible] = useState(false);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [noticeVisible, setNoticeVisible] = useState(false);
+  const [noticeTitle, setNoticeTitle] = useState('');
+  const [noticeMessage, setNoticeMessage] = useState('');
 
   const avatarLabel = currentUser?.fullName
     ? currentUser.fullName
@@ -46,12 +76,41 @@ export default function AdminUsersScreen({ navigation }) {
         .toUpperCase()
     : 'AD';
 
+  const summary = useMemo(() => {
+    const counts = {
+      all: users.length,
+      customer: 0,
+      restaurant_owner: 0,
+      admin: 0,
+      blocked: 0,
+    };
+
+    users.forEach((user) => {
+      if (counts[user.role] !== undefined) {
+        counts[user.role] += 1;
+      }
+      if (user.status === 'blocked') {
+        counts.blocked += 1;
+      }
+    });
+
+    return counts;
+  }, [users]);
+
   const filteredUsers = useMemo(() => {
+    const searchText = keyword.trim().toLowerCase();
+
     return users.filter((user) => {
-      const searchText = keyword.trim().toLowerCase();
       const matchesSearch = !searchText
         ? true
-        : [user.fullName, user.email, user.role, user.status]
+        : [
+            user.fullName,
+            user.email,
+            user.role,
+            user.status,
+            user.phone,
+            user.address,
+          ]
             .join(' ')
             .toLowerCase()
             .includes(searchText);
@@ -71,98 +130,120 @@ export default function AdminUsersScreen({ navigation }) {
     confirmLogout('Do you want to logout from admin portal?');
   };
 
-  const handleToggleStatus = (user) => {
-    const nextAction = user.status === 'active' ? 'Block' : 'Unblock';
-    const nextStatus = user.status === 'active' ? 'blocked' : 'active';
-
-    if (Platform.OS === 'web') {
-      toggleUserStatus(user.id, nextStatus).catch(() => {});
-      return;
-    }
-
-    Alert.alert(
-      `${nextAction} User`,
-      `${nextAction} ${user.fullName} (${ROLE_LABELS[user.role] || user.role})?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: nextAction,
-          style: user.status === 'active' ? 'destructive' : 'default',
-          onPress: async () => {
-            try {
-              await toggleUserStatus(user.id, nextStatus);
-            } catch (requestError) {
-              Alert.alert(
-                'Update Failed',
-                requestError.response?.data?.message ||
-                  'Could not update this user.'
-              );
-            }
-          },
-        },
-      ]
-    );
+  const openNotice = (title, message) => {
+    setNoticeTitle(title);
+    setNoticeMessage(message);
+    setNoticeVisible(true);
   };
 
-  const handleDelete = (user) => {
-    if (user.email === currentUser?.email || user.role === 'admin') {
-      const msg = 'You cannot delete yourself or other administrators.';
-      if (Platform.OS === 'web') { window.alert('Action Denied\n' + msg); }
-      else { Alert.alert('Action Denied', msg); }
-      return;
+  useEffect(() => {
+    if (route.params?.noticeAt) {
+      openNotice(
+        route.params.noticeTitle || 'Completed',
+        route.params.noticeMessage || 'Action completed successfully.'
+      );
+      navigation.setParams({
+        noticeAt: undefined,
+        noticeTitle: undefined,
+        noticeMessage: undefined,
+      });
     }
+  }, [
+    navigation,
+    route.params?.noticeAt,
+    route.params?.noticeMessage,
+    route.params?.noticeTitle,
+  ]);
 
-    if (Platform.OS === 'web') {
-      deleteUser(user.id).catch(() => {});
-      return;
-    }
-
-    Alert.alert(
-      'Delete User',
-      `Are you sure you want to permanently delete ${user.fullName}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteUser(user.id);
-            } catch (err) {
-              const msg = err.response?.data?.message || 'Could not delete user.';
-              Alert.alert('Delete Failed', msg);
-            }
-          },
-        },
-      ]
-    );
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadUsers();
+    setRefreshing(false);
   };
 
-  const handleChangeRole = async (user) => {
-    if (user.email === currentUser?.email) {
-      if (Platform.OS === 'web') { window.alert('Action Denied\nYou cannot change your own role.'); }
-      else { Alert.alert('Action Denied', 'You cannot change your own role.'); }
+  const handleOpenDetails = (user) => {
+    setSelectedUser(user);
+    setDetailVisible(true);
+  };
+
+  const handleOpenStatus = (user) => {
+    if (user.id === currentUser?.id) {
+      openNotice('Unavailable', 'You cannot change your own account status.');
       return;
     }
 
-    const roles = ['customer', 'restaurant_owner', 'admin'];
-    const currentIndex = roles.indexOf(user.role);
-    const nextRole = roles[(currentIndex + 1) % roles.length];
-    
+    setStatusTarget(user);
+    setStatusVisible(true);
+  };
+
+  const handleConfirmStatus = async () => {
+    if (!statusTarget || statusSubmitting) {
+      return;
+    }
+
+    const nextStatus = statusTarget.status === 'active' ? 'blocked' : 'active';
+
     try {
-      await updateUserRole(user.id, nextRole);
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Update failed. Did you restart the backend?';
-      if (Platform.OS === 'web') { window.alert('Error\n' + msg); }
-      else { Alert.alert('Error', msg); }
+      setStatusSubmitting(true);
+      const updatedUser = await toggleUserStatus(statusTarget.id, nextStatus);
+      setStatusVisible(false);
+
+      if (selectedUser?.id === updatedUser.id) {
+        setSelectedUser(updatedUser);
+      }
+
+      openNotice(
+        nextStatus === 'blocked' ? 'User Blocked' : 'User Unblocked',
+        `${updatedUser.fullName} is now ${nextStatus}.`
+      );
+    } catch (requestError) {
+      openNotice(
+        'Update Failed',
+        requestError.response?.data?.message || 'Could not update this user.'
+      );
+    } finally {
+      setStatusSubmitting(false);
     }
   };
 
-  const showUserDetails = (user) => {
-    Alert.alert(
-      user.fullName,
-      `Role: ${ROLE_LABELS[user.role] || user.role}\nStatus: ${user.status}\nEmail: ${user.email}\nPhone: ${user.phone}\nJoined: ${user.joinedAt}`
-    );
+  const handleOpenDelete = (user) => {
+    if (user.id === currentUser?.id) {
+      openNotice('Unavailable', 'You cannot delete your own account.');
+      return;
+    }
+
+    setDeleteTarget(user);
+    setDeleteVisible(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget || deleteSubmitting) {
+      return;
+    }
+
+    try {
+      setDeleteSubmitting(true);
+      await deleteUser(deleteTarget.id);
+      setDeleteVisible(false);
+
+      if (selectedUser?.id === deleteTarget.id) {
+        setDetailVisible(false);
+        setSelectedUser(null);
+      }
+
+      openNotice('Deleted', `${deleteTarget.fullName} has been removed.`);
+    } catch (requestError) {
+      openNotice(
+        'Delete Failed',
+        requestError.response?.data?.message || 'Could not delete this user.'
+      );
+    } finally {
+      setDeleteSubmitting(false);
+    }
+  };
+
+  const navigateToEdit = (user) => {
+    navigation.navigate('AdminUserForm', { userId: user.id });
   };
 
   return (
@@ -171,6 +252,13 @@ export default function AdminUsersScreen({ navigation }) {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={RED}
+            />
+          }
         >
           <AdminHeader
             avatarLabel={avatarLabel}
@@ -180,13 +268,13 @@ export default function AdminUsersScreen({ navigation }) {
 
           <Text style={styles.screenTitle}>User Management</Text>
           <Text style={styles.screenSubtitle}>
-            Search accounts, review roles, and control access across the app.
+            Search accounts, inspect profile details, and manage user access across the app.
           </Text>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           <View style={styles.searchBox}>
-            <Text style={styles.searchPrefix}>Q</Text>
+            <Text style={styles.searchPrefix}>Search</Text>
             <TextInput
               value={keyword}
               onChangeText={setKeyword}
@@ -199,13 +287,12 @@ export default function AdminUsersScreen({ navigation }) {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterRow}
+            contentContainerStyle={styles.statsRow}
           >
             {FILTERS.map((filter) => {
-              const isActive = activeFilter === filter;
               const label =
                 filter === 'all'
-                  ? 'All Users'
+                  ? 'All'
                   : filter === 'restaurant_owner'
                     ? 'Owners'
                     : filter === 'blocked'
@@ -213,18 +300,13 @@ export default function AdminUsersScreen({ navigation }) {
                       : filter.charAt(0).toUpperCase() + filter.slice(1);
 
               return (
-                <TouchableOpacity
+                <StatChip
                   key={filter}
-                  style={[styles.filterPill, isActive && styles.filterPillActive]}
-                  activeOpacity={0.85}
+                  label={label}
+                  value={summary[filter] || 0}
+                  active={activeFilter === filter}
                   onPress={() => setActiveFilter(filter)}
-                >
-                  <Text
-                    style={[styles.filterText, isActive && styles.filterTextActive]}
-                  >
-                    {label}
-                  </Text>
-                </TouchableOpacity>
+                />
               );
             })}
           </ScrollView>
@@ -233,110 +315,7 @@ export default function AdminUsersScreen({ navigation }) {
             <Text style={styles.helperText}>Loading users...</Text>
           ) : null}
 
-          {filteredUsers.map((user) => (
-            <View key={user.id} style={styles.userCard}>
-              <View style={styles.userTopRow}>
-                <View style={styles.userLeft}>
-                  <View style={styles.avatarShell}>
-                    <View style={styles.avatarFill}>
-                      <Text style={styles.avatarText}>{user.avatar}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.userInfo}>
-                    <View style={styles.nameRow}>
-                      <Text style={styles.userName}>{user.fullName}</Text>
-                      <View
-                        style={[
-                          styles.rolePill,
-                          user.role === 'admin'
-                            ? styles.roleAdmin
-                            : user.role === 'restaurant_owner'
-                              ? styles.roleOwner
-                              : styles.roleCustomer,
-                        ]}
-                      >
-                        <Text style={styles.roleText}>
-                          {ROLE_LABELS[user.role] || user.role}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <Text style={styles.userEmail}>{user.email}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.userStatusWrap}>
-                  <Text style={styles.statusLabel}>Status</Text>
-                  <Text
-                    style={[
-                      styles.statusValue,
-                      user.status === 'active'
-                        ? styles.statusActive
-                        : styles.statusBlocked,
-                    ]}
-                  >
-                    {user.status === 'active' ? 'Active' : 'Blocked'}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.userActions}>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.actionMuted, { marginRight: 'auto' }]}
-                  activeOpacity={0.85}
-                  onPress={() => handleChangeRole(user)}
-                >
-                  <Text style={styles.actionMutedText}>Role</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.actionButton,
-                    user.status === 'active'
-                      ? styles.actionDanger
-                      : styles.actionNeutral,
-                    { marginLeft: 8 }
-                  ]}
-                  activeOpacity={0.85}
-                  onPress={() => handleToggleStatus(user)}
-                >
-                  <Text
-                    style={[
-                      styles.actionButtonText,
-                      user.status === 'active'
-                        ? styles.actionDangerText
-                        : styles.actionNeutralText,
-                    ]}
-                  >
-                    {user.status === 'active' ? 'Block' : 'Unblock'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.actionPrimary, { marginLeft: 8 }]}
-                  activeOpacity={0.85}
-                  onPress={() => showUserDetails(user)}
-                >
-                  <Text style={[styles.actionButtonText, styles.actionPrimaryText]}>
-                    Details
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.actionDanger, { marginLeft: 8 }]}
-                  activeOpacity={0.85}
-                  onPress={() => handleDelete(user)}
-                >
-                  <Text style={[styles.actionButtonText, styles.actionDangerText]}>
-                    Delete
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
-
-          {filteredUsers.length === 0 && !loading.users ? (
+          {!loading.users && filteredUsers.length === 0 ? (
             <View style={styles.emptyCard}>
               <Text style={styles.emptyTitle}>No users found</Text>
               <Text style={styles.emptyText}>
@@ -344,10 +323,370 @@ export default function AdminUsersScreen({ navigation }) {
               </Text>
             </View>
           ) : null}
+
+          {filteredUsers.map((user) => {
+            const isSelf = user.id === currentUser?.id;
+
+            return (
+              <View key={user.id} style={styles.userCard}>
+                <View style={styles.userTopRow}>
+                  <View style={styles.userLeft}>
+                    <View style={styles.avatarShell}>
+                      <View style={styles.avatarFill}>
+                        <Text style={styles.avatarText}>{user.avatar}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.userInfo}>
+                      <View style={styles.nameRow}>
+                        <Text style={styles.userName}>{user.fullName}</Text>
+                        <View
+                          style={[
+                            styles.rolePill,
+                            user.role === 'admin'
+                              ? styles.roleAdmin
+                              : user.role === 'restaurant_owner'
+                                ? styles.roleOwner
+                                : styles.roleCustomer,
+                          ]}
+                        >
+                          <Text style={styles.roleText}>
+                            {ROLE_LABELS[user.role] || user.role}
+                          </Text>
+                        </View>
+                        {isSelf ? (
+                          <View style={styles.selfPill}>
+                            <Text style={styles.selfPillText}>You</Text>
+                          </View>
+                        ) : null}
+                      </View>
+
+                      <Text style={styles.userEmail}>{user.email}</Text>
+                      {user.phone ? <Text style={styles.userMeta}>{user.phone}</Text> : null}
+                    </View>
+                  </View>
+
+                  <View style={styles.userStatusWrap}>
+                    <Text style={styles.statusLabel}>Status</Text>
+                    <Text
+                      style={[
+                        styles.statusValue,
+                        user.status === 'active'
+                          ? styles.statusActive
+                          : styles.statusBlocked,
+                      ]}
+                    >
+                      {user.status === 'active' ? 'Active' : 'Blocked'}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={styles.joinedText}>Joined {user.joinedAt}</Text>
+
+                <View style={styles.userActions}>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.actionLight]}
+                    activeOpacity={0.85}
+                    onPress={() => handleOpenDetails(user)}
+                  >
+                    <Text style={[styles.actionButtonText, styles.actionLightText]}>
+                      Details
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.actionNeutral]}
+                    activeOpacity={0.85}
+                    onPress={() => navigateToEdit(user)}
+                  >
+                    <Text style={[styles.actionButtonText, styles.actionNeutralText]}>
+                      Edit
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.actionButton,
+                      isSelf
+                        ? styles.actionDisabled
+                        : user.status === 'active'
+                          ? styles.actionDanger
+                          : styles.actionNeutral,
+                    ]}
+                    activeOpacity={0.85}
+                    disabled={isSelf}
+                    onPress={() => handleOpenStatus(user)}
+                  >
+                    <Text
+                      style={[
+                        styles.actionButtonText,
+                        isSelf
+                          ? styles.actionDisabledText
+                          : user.status === 'active'
+                            ? styles.actionDangerText
+                            : styles.actionNeutralText,
+                      ]}
+                    >
+                      {isSelf ? 'Current User' : user.status === 'active' ? 'Block' : 'Unblock'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.actionButton,
+                      isSelf ? styles.actionDisabled : styles.actionDelete,
+                    ]}
+                    activeOpacity={0.85}
+                    disabled={isSelf}
+                    onPress={() => handleOpenDelete(user)}
+                  >
+                    <Text
+                      style={[
+                        styles.actionButtonText,
+                        isSelf ? styles.actionDisabledText : styles.actionDeleteText,
+                      ]}
+                    >
+                      Delete
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          })}
         </ScrollView>
+
+        <TouchableOpacity
+          style={styles.addButton}
+          activeOpacity={0.9}
+          onPress={() => navigation.navigate('AdminUserForm')}
+        >
+          <Text style={styles.addButtonText}>+</Text>
+        </TouchableOpacity>
 
         <AdminBottomBar activeTab="users" navigation={navigation} />
       </View>
+
+      <Modal
+        visible={detailVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDetailVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.detailSheet}>
+            <View style={styles.modalTopRow}>
+              <Text style={styles.modalTitle}>User Detail</Text>
+              <TouchableOpacity onPress={() => setDetailVisible(false)}>
+                <Text style={styles.closeText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+
+            {selectedUser ? (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.detailHero}>
+                  <View style={styles.detailAvatarShell}>
+                    <View style={styles.detailAvatarFill}>
+                      <Text style={styles.detailAvatarText}>{selectedUser.avatar}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.detailName}>{selectedUser.fullName}</Text>
+                  <Text style={styles.detailRole}>
+                    {ROLE_LABELS[selectedUser.role] || selectedUser.role}
+                  </Text>
+                </View>
+
+                <View style={styles.detailSection}>
+                  <Text style={styles.detailSectionTitle}>Account</Text>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Email</Text>
+                    <Text style={styles.detailValue}>{selectedUser.email}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Phone</Text>
+                    <Text style={styles.detailValue}>{selectedUser.phone || 'Not provided'}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Status</Text>
+                    <Text style={styles.detailValue}>
+                      {selectedUser.status === 'active' ? 'Active' : 'Blocked'}
+                    </Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Joined</Text>
+                    <Text style={styles.detailValue}>{selectedUser.joinedAt}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.detailSection}>
+                  <Text style={styles.detailSectionTitle}>Address</Text>
+                  <Text style={styles.detailParagraph}>
+                    {selectedUser.address || 'No address available'}
+                  </Text>
+                </View>
+
+                <View style={styles.detailSection}>
+                  <Text style={styles.detailSectionTitle}>Preferences</Text>
+                  <View style={styles.preferenceRow}>
+                    <Text style={styles.preferenceLabel}>Two factor authentication</Text>
+                    <Text style={styles.preferenceValue}>
+                      {selectedUser.preferences.twoFactorEnabled ? 'Enabled' : 'Disabled'}
+                    </Text>
+                  </View>
+                  <View style={styles.preferenceRow}>
+                    <Text style={styles.preferenceLabel}>Push notifications</Text>
+                    <Text style={styles.preferenceValue}>
+                      {selectedUser.preferences.pushNotificationsEnabled ? 'Enabled' : 'Disabled'}
+                    </Text>
+                  </View>
+                  <View style={styles.preferenceRow}>
+                    <Text style={styles.preferenceLabel}>Email reports</Text>
+                    <Text style={styles.preferenceValue}>
+                      {selectedUser.preferences.emailReportsEnabled ? 'Enabled' : 'Disabled'}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.detailActionRow}>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.actionNeutral, styles.detailButton]}
+                    onPress={() => navigateToEdit(selectedUser)}
+                  >
+                    <Text style={[styles.actionButtonText, styles.actionNeutralText]}>
+                      Edit User
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.actionButton,
+                      selectedUser.id === currentUser?.id
+                        ? styles.actionDisabled
+                        : styles.actionDelete,
+                      styles.detailButton,
+                    ]}
+                    disabled={selectedUser.id === currentUser?.id}
+                    onPress={() => handleOpenDelete(selectedUser)}
+                  >
+                    <Text
+                      style={[
+                        styles.actionButtonText,
+                        selectedUser.id === currentUser?.id
+                          ? styles.actionDisabledText
+                          : styles.actionDeleteText,
+                      ]}
+                    >
+                      Delete User
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={statusVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setStatusVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.statusCard}>
+            <Text style={styles.modalTitle}>
+              {statusTarget?.status === 'active' ? 'Block User' : 'Unblock User'}
+            </Text>
+            <Text style={styles.modalMessage}>
+              {statusTarget
+                ? `${statusTarget.status === 'active' ? 'Block' : 'Unblock'} ${statusTarget.fullName} (${ROLE_LABELS[statusTarget.role] || statusTarget.role})?`
+                : ''}
+            </Text>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                disabled={statusSubmitting}
+                onPress={() => setStatusVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                disabled={statusSubmitting}
+                onPress={handleConfirmStatus}
+              >
+                <Text style={styles.confirmButtonText}>
+                  {statusSubmitting
+                    ? 'Saving...'
+                    : statusTarget?.status === 'active'
+                      ? 'Block'
+                      : 'Unblock'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={deleteVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.statusCard}>
+            <Text style={styles.modalTitle}>Delete User</Text>
+            <Text style={styles.modalMessage}>
+              {deleteTarget
+                ? `Delete ${deleteTarget.fullName}? This removes the account and related chat, cart, notification, and review data.`
+                : ''}
+            </Text>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                disabled={deleteSubmitting}
+                onPress={() => setDeleteVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                disabled={deleteSubmitting}
+                onPress={handleConfirmDelete}
+              >
+                <Text style={styles.confirmButtonText}>
+                  {deleteSubmitting ? 'Deleting...' : 'Delete'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={noticeVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setNoticeVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.statusCard}>
+            <Text style={styles.modalTitle}>{noticeTitle}</Text>
+            <Text style={styles.modalMessage}>{noticeMessage}</Text>
+
+            <TouchableOpacity
+              style={[styles.modalButton, styles.confirmButton, styles.noticeButton]}
+              onPress={() => setNoticeVisible(false)}
+            >
+              <Text style={styles.confirmButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -387,7 +726,7 @@ const styles = StyleSheet.create({
   helperText: {
     color: MUTED,
     fontSize: 13,
-    marginBottom: 12,
+    marginTop: 10,
   },
   searchBox: {
     flexDirection: 'row',
@@ -402,7 +741,7 @@ const styles = StyleSheet.create({
   },
   searchPrefix: {
     color: RED,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
     marginRight: 10,
   },
@@ -411,30 +750,40 @@ const styles = StyleSheet.create({
     color: TEXT,
     fontSize: 14,
   },
-  filterRow: {
-    paddingRight: 10,
+  statsRow: {
+    paddingRight: 12,
     gap: 10,
     marginBottom: 18,
   },
-  filterPill: {
+  statChip: {
     backgroundColor: CARD,
-    borderRadius: 999,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#ecd8d5',
-    paddingHorizontal: 16,
-    paddingVertical: 9,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    minWidth: 86,
   },
-  filterPillActive: {
+  statChipActive: {
     backgroundColor: RED,
     borderColor: RED,
   },
-  filterText: {
+  statChipValue: {
+    color: TEXT,
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  statChipValueActive: {
+    color: '#fff',
+  },
+  statChipLabel: {
     color: MUTED,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
-  filterTextActive: {
-    color: '#fff',
+  statChipLabelActive: {
+    color: '#ffe7ea',
   },
   userCard: {
     backgroundColor: CARD,
@@ -453,7 +802,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 14,
+    marginBottom: 10,
   },
   userLeft: {
     flexDirection: 'row',
@@ -489,7 +838,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 8,
+    marginLeft: 8,
     marginBottom: 4,
   },
   userName: {
@@ -517,8 +866,25 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textTransform: 'uppercase',
   },
+  selfPill: {
+    backgroundColor: '#f6f3ef',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  selfPillText: {
+    color: '#8a7b70',
+    fontSize: 9,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
   userEmail: {
     color: MUTED,
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  userMeta: {
+    color: '#5f6474',
     fontSize: 12,
   },
   userStatusWrap: {
@@ -541,41 +907,60 @@ const styles = StyleSheet.create({
   statusBlocked: {
     color: RED,
   },
+  joinedText: {
+    color: '#7a7d89',
+    fontSize: 12,
+    marginBottom: 12,
+  },
   userActions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
     flexWrap: 'wrap',
+    marginLeft: 8,
   },
   actionButton: {
     borderRadius: 999,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 9,
     borderWidth: 1,
   },
-  actionPrimary: {
-    backgroundColor: RED,
-    borderColor: RED,
-  },
-  actionDanger: {
-    backgroundColor: '#fff5f6',
-    borderColor: '#efc4ca',
+  actionLight: {
+    backgroundColor: '#fffdfb',
+    borderColor: '#eadcd8',
   },
   actionNeutral: {
     backgroundColor: '#f6f3ef',
     borderColor: '#e5ddd4',
   },
+  actionDanger: {
+    backgroundColor: '#fff5f6',
+    borderColor: '#efc4ca',
+  },
+  actionDelete: {
+    backgroundColor: '#fff1f2',
+    borderColor: '#efb6bf',
+  },
+  actionDisabled: {
+    backgroundColor: '#f2f3f5',
+    borderColor: '#e4e6ea',
+  },
   actionButtonText: {
     fontSize: 11,
     fontWeight: '800',
   },
-  actionPrimaryText: {
-    color: '#fff',
+  actionLightText: {
+    color: TEXT,
+  },
+  actionNeutralText: {
+    color: '#5f6474',
   },
   actionDangerText: {
     color: RED,
   },
-  actionNeutralText: {
-    color: '#5f6474',
+  actionDeleteText: {
+    color: RED,
+  },
+  actionDisabledText: {
+    color: '#9a9aa5',
   },
   emptyCard: {
     backgroundColor: CARD,
@@ -594,5 +979,209 @@ const styles = StyleSheet.create({
     color: MUTED,
     fontSize: 13,
     lineHeight: 18,
+  },
+  addButton: {
+    position: 'absolute',
+    right: 18,
+    bottom: 100,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: RED,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: RED,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.25,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  addButtonText: {
+    color: '#fff',
+    fontSize: 31,
+    lineHeight: 31,
+    marginTop: -2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(39, 24, 22, 0.4)',
+    justifyContent: 'flex-end',
+  },
+  detailSheet: {
+    backgroundColor: CARD,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 28,
+    maxHeight: '86%',
+  },
+  modalTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    color: TEXT,
+    fontSize: 22,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  closeText: {
+    color: RED,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  detailHero: {
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  detailAvatarShell: {
+    width: 82,
+    height: 82,
+    borderRadius: 41,
+    backgroundColor: '#efe7dc',
+    padding: 4,
+    borderWidth: 1,
+    borderColor: '#ece2d5',
+    marginBottom: 12,
+  },
+  detailAvatarFill: {
+    flex: 1,
+    borderRadius: 37,
+    backgroundColor: '#36404a',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailAvatarText: {
+    color: '#fff',
+    fontSize: 26,
+    fontWeight: '800',
+  },
+  detailName: {
+    color: TEXT,
+    fontSize: 24,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  detailRole: {
+    color: '#8a7b70',
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  detailSection: {
+    borderWidth: 1,
+    borderColor: '#f1eee8',
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 12,
+  },
+  detailSectionTitle: {
+    color: TEXT,
+    fontSize: 13,
+    fontWeight: '800',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 10,
+  },
+  detailLabel: {
+    color: MUTED,
+    fontSize: 12,
+  },
+  detailValue: {
+    color: TEXT,
+    fontSize: 12,
+    fontWeight: '700',
+    flexShrink: 1,
+    textAlign: 'right',
+  },
+  detailParagraph: {
+    color: '#5f6474',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  preferenceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 10,
+  },
+  preferenceLabel: {
+    color: MUTED,
+    fontSize: 12,
+    flex: 1,
+  },
+  preferenceValue: {
+    color: TEXT,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  detailActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  detailButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusCard: {
+    marginHorizontal: 18,
+    marginBottom: 28,
+    marginTop: 'auto',
+    backgroundColor: CARD,
+    borderRadius: 24,
+    padding: 20,
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: '#5b403d',
+    lineHeight: 20,
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 22,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    borderWidth: 1,
+    borderColor: '#f0e5e3',
+    backgroundColor: '#fff',
+    marginRight: 8,
+  },
+  confirmButton: {
+    backgroundColor: '#B11226',
+    marginLeft: 8,
+  },
+  cancelButtonText: {
+    color: '#8f6f6c',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  confirmButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  noticeButton: {
+    marginLeft: 0,
   },
 });
