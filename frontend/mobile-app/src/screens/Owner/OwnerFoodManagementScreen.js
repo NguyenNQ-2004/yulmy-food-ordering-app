@@ -28,6 +28,7 @@ export default function OwnerFoodManagementScreen({ navigation }) {
   const [foods, setFoods] = useState([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteError, setDeleteError] = useState('');
 
   const fetchFoods = async () => {
     try {
@@ -48,6 +49,18 @@ export default function OwnerFoodManagementScreen({ navigation }) {
   );
 
   const handleDelete = (id, name) => {
+    setDeleteError('Button pressed for ' + name + '...');
+    if (Platform.OS === 'web') {
+      api.delete(`/owner/foods/${id}`).then(() => {
+        setDeleteError('Success! Deleting from UI...');
+        setFoods(prev => prev.filter(item => item._id !== id));
+        setTimeout(() => setDeleteError(''), 2000);
+      }).catch((error) => { 
+        setDeleteError('API ERROR: ' + (error.response?.data?.message || error.message || 'Failed to delete dish.'));
+      });
+      return;
+    }
+
     Alert.alert(
       'Delete Dish',
       `Are you sure you want to delete "${name}"?`,
@@ -60,9 +73,8 @@ export default function OwnerFoodManagementScreen({ navigation }) {
             try {
               await api.delete(`/owner/foods/${id}`);
               setFoods(prev => prev.filter(item => item._id !== id));
-              Alert.alert('Success', 'Dish deleted successfully.');
             } catch (error) {
-              Alert.alert('Error', error.response?.data?.message || 'Failed to delete.');
+              setDeleteError(error.response?.data?.message || 'Failed to delete dish.');
             }
           }
         }
@@ -102,6 +114,12 @@ export default function OwnerFoodManagementScreen({ navigation }) {
         </ScrollView>
       </View>
 
+      {deleteError ? (
+        <View style={{ backgroundColor: '#ffebe9', padding: 10, margin: 20, borderRadius: 8, borderWidth: 1, borderColor: '#fca5a5' }}>
+          <Text style={{ color: RED, fontWeight: 'bold' }}>Error: {deleteError}</Text>
+        </View>
+      ) : null}
+
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {isLoading ? (
           <View style={styles.emptyContainer}>
@@ -133,7 +151,7 @@ export default function OwnerFoodManagementScreen({ navigation }) {
                       <Text style={styles.btnText}>✏️ Edit</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={styles.deleteBtn}
+                      style={[styles.deleteBtn, { marginLeft: 8 }]}
                       onPress={() => handleDelete(item._id, item.name)}
                     >
                       <Text style={styles.btnText}>🗑️ Delete</Text>
@@ -267,7 +285,6 @@ const styles = StyleSheet.create({
   },
   buttons: {
     flexDirection: 'row',
-    gap: 8,
   },
   editBtn: {
     backgroundColor: '#fff',

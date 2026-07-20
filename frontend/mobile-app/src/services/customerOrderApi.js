@@ -1,5 +1,20 @@
 import api from './api';
 
+export async function getRestaurants() {
+  const response = await api.get('/customer/restaurants');
+  return response.data.data;
+}
+
+export async function getAllFoods() {
+  const response = await api.get('/customer/foods');
+  return response.data.data;
+}
+
+export async function getRestaurantReviews(restaurantId) {
+  const response = await api.get(`/customer/restaurants/${restaurantId}/reviews`);
+  return response.data.data;
+}
+
 export async function getMyCart() {
   const response = await api.get('/cart');
   return response.data.data.cart;
@@ -48,6 +63,11 @@ export async function mockOrderPayment(orderId, result = 'success') {
 
 export async function getOrderStatus(orderId) {
   const response = await api.get(`/orders/${orderId}/status`);
+  return response.data.data;
+}
+
+export async function rateOrder(orderId, rating, review) {
+  const response = await api.post(`/orders/${orderId}/rate`, { rating, review });
   return response.data.data;
 }
 

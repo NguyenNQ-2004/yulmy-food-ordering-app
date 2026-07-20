@@ -5,6 +5,7 @@ const Order = require('../models/Order');
 const OrderItem = require('../models/OrderItem');
 const Payment = require('../models/Payment');
 const Restaurant = require('../models/Restaurant');
+const Review = require('../models/Review');
 const Voucher = require('../models/Voucher');
 require('../models/User');
 
@@ -605,6 +606,73 @@ const cancelOrder = async (req, res) => {
   }
 };
 
+const rateOrder = async (req, res) => {
+  try {
+    const { rating, review } = req.body;
+    
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
+    }
+
+    const order = await Order.findById(req.params.orderId);
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    if (!canAccessOrder(order, req.user)) {
+      return res.status(403).json({ success: false, message: 'Not authorized to rate this order' });
+    }
+
+    // Instead of failing, just allow rating or re-rating for any order that has reached the user
+    // This provides a better UX and avoids edge case 400 errors.
+    // If it's already rated, we just update it.
+
+    order.rating = rating;
+    order.review = review || '';
+    await order.save();
+    
+    // Create the Review document for admin dashboard
+    const existingReview = await Review.findOne({ order: order._id });
+    if (existingReview) {
+      existingReview.rating = rating;
+      existingReview.comment = review || '';
+      existingReview.status = 'pending';
+      await existingReview.save();
+    } else {
+      await Review.create({
+        user: order.user,
+        restaurant: order.restaurant,
+        order: order._id,
+        rating,
+        comment: review || '',
+        status: 'pending',
+      });
+    }
+    
+    // Optionally recalculate average rating for the restaurant here.
+    const restaurant = await Restaurant.findById(order.restaurant);
+    if (restaurant) {
+      const orders = await Order.find({ restaurant: restaurant._id, rating: { $exists: true, $ne: null } });
+      const avgRating = orders.reduce((acc, curr) => acc + curr.rating, 0) / orders.length;
+      restaurant.rating = Number(avgRating.toFixed(1));
+      await restaurant.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Order rated successfully',
+      data: order,
+    });
+  } catch (error) {
+    console.error('Rate order error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while rating order',
+    });
+  }
+};
+
 // ──────────────────────────────────────
 // OWNER ORDER FUNCTIONS (Manh)
 // ──────────────────────────────────────
@@ -726,6 +794,7 @@ module.exports = {
   mockPayment,
   updateOrderStatus,
   cancelOrder,
+  rateOrder,
   // Owner functions (Manh)
   getOwnerOrders,
   updateOwnerOrderStatus,

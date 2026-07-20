@@ -25,6 +25,7 @@ import {
   saveLocalCartItems,
   saveLocalCartVoucher,
 } from '../../services/localCartStorage';
+import { AuthContext } from '../../context/AuthContext';
 
 const RED = '#B11226';
 const DARK_RED = '#980F20';
@@ -71,6 +72,7 @@ function normalizeCart(cart) {
 }
 
 export default function CartScreen({ navigation, route }) {
+  const { currentUser } = React.useContext(AuthContext);
   const [items, setItems] = useState([]);
   const [promoCode, setPromoCode] = useState('');
   const [appliedVoucher, setAppliedVoucher] = useState(null);
@@ -89,8 +91,20 @@ export default function CartScreen({ navigation, route }) {
     setIsLoadingCart(true);
     setCartError('');
 
-    try {
+    // If user is not logged in, load from local storage only
+    if (!currentUser) {
       const storedItems = await loadLocalCartItems();
+      const storedVoucher = await loadLocalCartVoucher();
+      setItems(storedItems);
+      setRestaurantName(storedItems[0]?.restaurant || localRestaurantName);
+      setAppliedVoucher(storedItems.length > 0 ? storedVoucher : null);
+      setPromoCode(storedItems.length > 0 ? storedVoucher?.code || '' : '');
+      setIsBackendCart(false);
+      setIsLoadingCart(false);
+      return;
+    }
+
+    try {
       const storedVoucher = await loadLocalCartVoucher();
       const cart = await getMyCart();
       const normalizedCart = normalizeCart(cart);
@@ -126,7 +140,7 @@ export default function CartScreen({ navigation, route }) {
     } finally {
       setIsLoadingCart(false);
     }
-  }, [localCartItems, localRestaurantName, selectedVoucherParam]);
+  }, [currentUser, localCartItems, localRestaurantName, selectedVoucherParam]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', loadCart);
@@ -166,7 +180,7 @@ export default function CartScreen({ navigation, route }) {
   const totals = useMemo(() => {
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const deliveryFee = subtotal > 0 ? 1.5 : 0;
-    const serviceFee = subtotal > 0 ? 0.99 : 0;
+    const serviceFee = 0; // Removed to match backend
     const discount = appliedVoucher?.discountAmount || 0;
     const total = Math.max(subtotal + deliveryFee + serviceFee - discount, 0);
 
@@ -473,10 +487,6 @@ export default function CartScreen({ navigation, route }) {
             <View style={styles.receiptRow}>
               <Text style={styles.receiptText}>Delivery fee</Text>
               <Text style={styles.receiptValue}>{formatMoney(totals.deliveryFee)}</Text>
-            </View>
-            <View style={styles.receiptRow}>
-              <Text style={styles.receiptText}>Service fee</Text>
-              <Text style={styles.receiptValue}>{formatMoney(totals.serviceFee)}</Text>
             </View>
             {appliedVoucher && (
               <View style={styles.receiptRow}>

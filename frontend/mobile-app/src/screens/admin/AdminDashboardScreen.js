@@ -51,7 +51,7 @@ function MiniLineChart({ data }) {
   return (
     <View style={styles.chartOuter}>
       <View style={styles.chartHeaderRow}>
-        <Text style={styles.chartTitle}>Revenue Overview</Text>
+        <Text style={styles.chartTitle}>Platform Fee Overview (10%)</Text>
         <Text style={styles.chartRange}>Last 7 Days</Text>
       </View>
 
@@ -141,21 +141,14 @@ export default function AdminDashboardScreen({ navigation }) {
   };
 
   const stats = [
-    { key: 'orders', label: 'Total Orders', value: String(metrics.totalOrders || 0) },
-    { key: 'revenue', label: 'Revenue', value: metrics.totalRevenueLabel || '$0' },
-    { key: 'users', label: 'Users', value: String(metrics.totalUsers || 0) },
+    { key: 'users', label: 'Total Users', value: String(metrics.totalUsers || 0) },
     {
       key: 'restaurants',
       label: 'Restaurants',
       value: String(metrics.totalRestaurants || 0),
     },
-      { key: 'foods', label: 'Foods', value: String(metrics.totalFoods || 0) },
-    {
-      key: 'pending',
-      label: 'Pending Orders',
-      value: String(metrics.pendingOrders || 0),
-      urgent: true,
-    },
+    { key: 'orders', label: 'Platform Orders', value: String(metrics.totalOrders || 0) },
+    { key: 'revenue', label: 'Platform Fee (10%)', value: dashboard?.metrics?.totalRevenue ? `$${(dashboard.metrics.totalRevenue * 0.1).toFixed(0)}` : '$0', urgent: true },
   ];
 
   return (
@@ -186,11 +179,9 @@ export default function AdminDashboardScreen({ navigation }) {
                 onPress={() => {
                   if (item.key === 'users') {
                     navigation.navigate('AdminUsers');
-                  } else if (item.key === 'foods') {
-                    navigation.navigate('AdminFoods');
                   } else if (item.key === 'restaurants') {
                     navigation.navigate('AdminRestaurants');
-                  } else if (item.key === 'pending' || item.key === 'orders') {
+                  } else if (item.key === 'orders') {
                     navigation.navigate('AdminOrders');
                   }
                 }}
@@ -201,7 +192,7 @@ export default function AdminDashboardScreen({ navigation }) {
                   <Text style={styles.statValue}>{item.value}</Text>
                   {item.urgent ? (
                     <View style={styles.urgentBadge}>
-                      <Text style={styles.urgentBadgeText}>URGENT</Text>
+                      <Text style={styles.urgentBadgeText}>PROFIT</Text>
                     </View>
                   ) : null}
                 </View>
@@ -229,13 +220,7 @@ export default function AdminDashboardScreen({ navigation }) {
           <MiniLineChart data={dashboard?.revenueSeries || []} />
 
           <View style={styles.recentHeader}>
-            <Text style={styles.sectionTitle}>Recent Orders</Text>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('AdminOrders')}
-            >
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
+            <Text style={styles.sectionTitle}>Recent Platform Orders</Text>
           </View>
 
           {loading.dashboard && !dashboard ? (

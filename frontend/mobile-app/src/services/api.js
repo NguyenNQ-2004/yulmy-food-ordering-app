@@ -39,14 +39,10 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor: handle 401 globally
+// Response interceptor: only pass through, 401 handled by AuthContext
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid — could trigger logout here
-      console.warn('Unauthorized request — token may be expired.');
-    }
     return Promise.reject(error);
   }
 );

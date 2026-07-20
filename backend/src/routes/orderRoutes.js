@@ -7,6 +7,7 @@ const {
   getOrderStatus,
   mockPayment,
   updateOrderStatus,
+  rateOrder,
 } = require('../controllers/orderController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -20,6 +21,7 @@ router.get('/:orderId/status', getOrderStatus);
 router.post('/:orderId/payment/mock', mockPayment);
 router.put('/:orderId/status', updateOrderStatus);
 router.put('/:orderId/cancel', cancelOrder);
+router.post('/:orderId/rate', rateOrder);
 router.get('/:orderId', getOrderById);
 
 module.exports = router;

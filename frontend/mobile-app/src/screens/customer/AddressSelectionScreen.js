@@ -59,6 +59,7 @@ export default function AddressSelectionScreen({ navigation, route }) {
   );
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [addressForm, setAddressForm] = useState(EMPTY_ADDRESS_FORM);
+  const [editingAddressId, setEditingAddressId] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -93,6 +94,20 @@ export default function AddressSelectionScreen({ navigation, route }) {
   const closeAddModal = () => {
     setIsAddModalVisible(false);
     setAddressForm(EMPTY_ADDRESS_FORM);
+    setEditingAddressId(null);
+  };
+
+  const openEditModal = (address) => {
+    setAddressForm({
+      label: address.label,
+      receiverName: address.receiverName,
+      phone: address.phone,
+      line1: address.line1,
+      line2: address.line2,
+      note: address.note || '',
+    });
+    setEditingAddressId(address.id);
+    setIsAddModalVisible(true);
   };
 
   const handleSelectAddress = async (address) => {
@@ -127,7 +142,7 @@ export default function AddressSelectionScreen({ navigation, route }) {
     }
 
     const newAddress = {
-      id: `address-${Date.now()}`,
+      id: editingAddressId || `address-${Date.now()}`,
       label,
       receiverName,
       phone,
@@ -137,8 +152,16 @@ export default function AddressSelectionScreen({ navigation, route }) {
       isDefault: false,
     };
 
-    const customAddresses = [...addresses.filter((address) => address.id.startsWith('address-')), newAddress];
-    const nextAddresses = [...ADDRESSES, ...customAddresses];
+    let nextAddresses = [];
+    let customAddresses = [];
+
+    if (editingAddressId) {
+      nextAddresses = addresses.map(addr => addr.id === editingAddressId ? newAddress : addr);
+      customAddresses = nextAddresses.filter((address) => address.id.startsWith('address-'));
+    } else {
+      customAddresses = [...addresses.filter((address) => address.id.startsWith('address-')), newAddress];
+      nextAddresses = [...ADDRESSES, ...customAddresses];
+    }
 
     setAddresses(nextAddresses);
     closeAddModal();
@@ -234,11 +257,9 @@ export default function AddressSelectionScreen({ navigation, route }) {
                     ) : null}
                   </View>
 
-                  {address.id === 'home' && (
-                    <TouchableOpacity style={styles.editButton}>
-                      <Text style={styles.editIcon}>/</Text>
-                    </TouchableOpacity>
-                  )}
+                  <TouchableOpacity style={styles.editButton} onPress={() => openEditModal(address)}>
+                    <Text style={styles.editIcon}>✎</Text>
+                  </TouchableOpacity>
                 </TouchableOpacity>
               );
             })}
@@ -260,7 +281,7 @@ export default function AddressSelectionScreen({ navigation, route }) {
         >
           <View style={styles.modalOverlay}>
             <View style={styles.addressModal}>
-              <Text style={styles.modalTitle}>Add New Address</Text>
+              <Text style={styles.modalTitle}>{editingAddressId ? 'Edit Address' : 'Add New Address'}</Text>
               <TextInput
                 style={styles.modalInput}
                 value={addressForm.label}
@@ -601,7 +622,6 @@ const styles = StyleSheet.create({
     color: '#5b3334',
     fontSize: 20,
     fontWeight: '900',
-    transform: [{ rotate: '35deg' }],
   },
   bottomBar: {
     position: 'absolute',

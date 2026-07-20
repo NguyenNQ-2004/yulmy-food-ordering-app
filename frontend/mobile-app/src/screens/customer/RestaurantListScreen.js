@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyCart, getFavorites, toggleFavorite } from '../../services/customerOrderApi';
 import { loadLocalCartItems } from '../../services/localCartStorage';
+import { AuthContext } from '../../context/AuthContext';
 
 const RED = '#B11226';
 const LIGHT_BG = '#fffaf9';
@@ -90,6 +91,7 @@ export default function RestaurantListScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [cartCount, setCartCount] = useState(0);
   const [favoriteIds, setFavoriteIds] = useState([]);
+  const { currentUser } = useContext(AuthContext);
 
   const refreshCartCount = async () => {
     try {
@@ -102,6 +104,7 @@ export default function RestaurantListScreen({ navigation }) {
   };
 
   const refreshFavorites = async () => {
+    if (!currentUser) return;
     try {
       const favs = await getFavorites();
       const favRestIds = (favs || []).filter(f => f.restaurant).map(f => f.restaurant._id);
@@ -114,11 +117,17 @@ export default function RestaurantListScreen({ navigation }) {
   useFocusEffect(
     React.useCallback(() => {
       refreshCartCount();
-      refreshFavorites();
-    }, [])
+      if (currentUser) {
+        refreshFavorites();
+      }
+    }, [currentUser])
   );
 
   const handleToggleFav = async (restId) => {
+    if (!currentUser) {
+      navigation.navigate('Auth');
+      return;
+    }
     try {
       await toggleFavorite(null, restId);
       refreshFavorites();
@@ -238,11 +247,11 @@ export default function RestaurantListScreen({ navigation }) {
           <Text style={styles.navIcon}>♥</Text>
           <Text style={styles.navLabel}>Favorites</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('OrderHistory')}>
+        <TouchableOpacity style={styles.navItem} onPress={() => currentUser ? navigation.navigate('OrderHistory') : navigation.navigate('Auth')}>
            <Text style={styles.navIcon}>📋</Text>
            <Text style={styles.navLabel}>Orders</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={() => currentUser ? navigation.navigate('Profile') : navigation.navigate('Auth')}>
            <Text style={styles.navIcon}>👤</Text>
            <Text style={styles.navLabel}>Profile</Text>
         </TouchableOpacity>

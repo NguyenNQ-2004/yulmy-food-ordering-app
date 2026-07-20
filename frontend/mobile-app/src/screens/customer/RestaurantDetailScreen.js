@@ -9,12 +9,14 @@ import {
   Image,
   Dimensions,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 
 import { useFocusEffect } from '@react-navigation/native';
-import { addItemToCart, clearCart, getMyCart } from '../../services/customerOrderApi';
-import { clearLocalCartItems } from '../../services/localCartStorage';
+import { addItemToCart, clearCart, getMyCart, getFavorites, toggleFavorite } from '../../services/customerOrderApi';
+import { clearLocalCartItems, loadLocalCartItems } from '../../services/localCartStorage';
 import api from '../../services/api';
+import { AuthContext } from '../../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
@@ -163,6 +165,7 @@ const ALL_MENU_ITEMS = [
 ];
 
 export default function RestaurantDetailScreen({ navigation, route }) {
+  const { currentUser } = React.useContext(AuthContext);
   const passedRestaurant = route?.params?.restaurant;
 
   const currentRestaurant = passedRestaurant ? {
@@ -188,8 +191,21 @@ export default function RestaurantDetailScreen({ navigation, route }) {
   const [cartCount, setCartCount] = useState(1);
   const [cartTotal, setCartTotal] = useState(18.00);
   const [addingItemId, setAddingItemId] = useState(null);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   const refreshCartCount = async () => {
+    if (!currentUser) {
+      try {
+        const storedItems = await loadLocalCartItems();
+        const totalItems = storedItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+        const amount = storedItems.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 0)), 0);
+        setCartCount(totalItems);
+        setCartTotal(amount);
+      } catch (e) {
+        console.log(e);
+      }
+      return;
+    }
     try {
       const cart = await getMyCart();
       setCartCount(Number(cart?.totalItems || 0));
@@ -220,19 +236,49 @@ export default function RestaurantDetailScreen({ navigation, route }) {
     React.useCallback(() => {
       refreshCartCount();
       fetchFoods();
-    }, [currentRestaurant.id])
+      
+      const checkFavorite = async () => {
+        try {
+          const favs = await getFavorites();
+          const isFav = (favs || []).some(f => f.restaurant && f.restaurant._id === currentRestaurant.id);
+          setIsFavorite(isFav);
+        } catch (error) {
+          console.error(error);
+        }
+      };
+      if (currentUser) {
+        checkFavorite();
+      }
+    }, [currentRestaurant.id, currentUser])
   );
 
+  const handleToggleFavorite = async () => {
+    if (!currentUser) {
+      navigation.navigate('Auth');
+      return;
+    }
+    try {
+      const result = await toggleFavorite(null, currentRestaurant.id);
+      setIsFavorite(result.isFavorite);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const addBackendCartItem = async (item) => {
-    const cart = await addItemToCart(item.id, 1);
+    const cart = await addItemToCart(item.id || item._id, 1);
     setCartCount(Number(cart?.totalItems || 0));
     setCartTotal(Number(cart?.totalAmount || 0));
     await clearLocalCartItems();
   };
 
   const handleAddToCart = async (item) => {
+    if (!currentUser) {
+      navigation.navigate('Auth');
+      return;
+    }
     if (addingItemId) return;
-    setAddingItemId(item.id);
+    setAddingItemId(item.id || item._id);
     try {
       await addBackendCartItem(item);
     } catch (error) {
@@ -289,7 +335,10 @@ export default function RestaurantDetailScreen({ navigation, route }) {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Epicurean</Text>
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          <TouchableOpacity style={styles.headerIcon} onPress={handleChatWithOwner}>
+          <TouchableOpacity style={styles.headerIcon} onPress={handleToggleFavorite}>
+            <Text style={[{fontSize: 20}, isFavorite && {color: RED}]}>{isFavorite ? '♥' : '♡'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.headerIcon, {marginLeft: 15}]} onPress={handleChatWithOwner}>
             <Text style={{fontSize: 20}}>💬</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.headerIcon, {marginLeft: 15}]} onPress={() => navigation.navigate('Cart')}>

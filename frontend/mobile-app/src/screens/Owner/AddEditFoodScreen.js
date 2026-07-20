@@ -110,14 +110,28 @@ export default function AddEditFoodScreen({ route, navigation }) {
           )}
           <TouchableOpacity 
             style={styles.changeImageBtn}
-            onPress={() => Alert.alert('Upload Photo', 'Photo picker placeholder')}
+            onPress={() => {
+              Alert.alert('Upload Photo', 'Please paste the image URL in the Image Link field below.');
+            }}
           >
-            <Text style={styles.changeImageText}>📸 Upload Dish Photo</Text>
+            <Text style={styles.changeImageText}>📸 Set Dish Photo</Text>
           </TouchableOpacity>
         </View>
 
         {/* Form */}
         <View style={styles.form}>
+          <Text style={styles.label}>Image Link (URL)</Text>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              value={imageUri}
+              onChangeText={setImageUri}
+              placeholder="e.g., https://example.com/image.jpg"
+              placeholderTextColor="#999"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
           <Text style={styles.label}>Dish Name *</Text>
           <View style={styles.inputContainer}>
             <TextInput

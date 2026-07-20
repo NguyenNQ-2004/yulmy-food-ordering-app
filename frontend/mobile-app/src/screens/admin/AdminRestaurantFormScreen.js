@@ -10,6 +10,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Platform,
 } from 'react-native';
 
 import AdminBottomBar from '../../components/admin/AdminBottomBar';
@@ -51,6 +52,7 @@ export default function AdminRestaurantFormScreen({ navigation, route }) {
     currentRestaurant?.deliveryTime || '20-30 min'
   );
   const [status, setStatus] = useState(currentRestaurant?.status || 'active');
+  const [errorMsg, setErrorMsg] = useState('');
 
   const avatarLabel = currentUser?.fullName
     ? currentUser.fullName
@@ -70,8 +72,11 @@ export default function AdminRestaurantFormScreen({ navigation, route }) {
   };
 
   const handleSave = async () => {
+    setErrorMsg('');
     if (!name.trim() || !address.trim()) {
-      Alert.alert('Missing data', 'Please enter restaurant name and address.');
+      const msg = 'Please enter restaurant name and address.';
+      if (Platform.OS === 'web') setErrorMsg(msg);
+      else Alert.alert('Missing data', msg);
       return;
     }
 
@@ -89,22 +94,28 @@ export default function AdminRestaurantFormScreen({ navigation, route }) {
     try {
       if (currentRestaurant) {
         await updateRestaurant(currentRestaurant.id, payload);
-        Alert.alert('Saved', 'Restaurant updated successfully.', [
-          { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
+        if (Platform.OS === 'web') {
+          navigation.goBack();
+        } else {
+          Alert.alert('Saved', 'Restaurant updated successfully.', [
+            { text: 'OK', onPress: () => navigation.goBack() },
+          ]);
+        }
         return;
       }
 
       await createRestaurant(payload);
-      Alert.alert('Created', 'Restaurant added successfully.', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      if (Platform.OS === 'web') {
+        navigation.goBack();
+      } else {
+        Alert.alert('Created', 'Restaurant added successfully.', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+      }
     } catch (requestError) {
-      Alert.alert(
-        'Save Failed',
-        requestError.response?.data?.message ||
-          'Could not save this restaurant.'
-      );
+      const msg = requestError.response?.data?.message || 'Could not save this restaurant.';
+      if (Platform.OS === 'web') setErrorMsg(msg);
+      else Alert.alert('Save Failed', msg);
     }
   };
 
@@ -129,6 +140,9 @@ export default function AdminRestaurantFormScreen({ navigation, route }) {
           </Text>
 
           <View style={styles.card}>
+            {errorMsg ? (
+              <Text style={{ color: RED, fontWeight: 'bold', marginBottom: 12 }}>Error: {errorMsg}</Text>
+            ) : null}
             <Text style={styles.sectionLabel}>Restaurant Cover Photo</Text>
             <Image source={{ uri: previewImage }} style={styles.previewImage} />
 
@@ -251,7 +265,7 @@ export default function AdminRestaurantFormScreen({ navigation, route }) {
           </TouchableOpacity>
         </ScrollView>
 
-        <AdminBottomBar activeTab="dashboard" navigation={navigation} />
+        <AdminBottomBar activeTab="restaurants" navigation={navigation} />
       </View>
     </SafeAreaView>
   );

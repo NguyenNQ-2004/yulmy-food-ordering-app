@@ -29,7 +29,7 @@ const STATUS_COLORS = {
   Cancelled: '#EF4444',
 };
 
-const TABS = ['Pending', 'Preparing', 'Delivering', 'Completed'];
+const TABS = ['Pending', 'Confirmed', 'Preparing', 'Delivering', 'Completed'];
 
 export default function OwnerOrderManagementScreen({ navigation }) {
   const [orders, setOrders] = useState([]);
@@ -81,32 +81,34 @@ export default function OwnerOrderManagementScreen({ navigation }) {
       />
 
       {/* Tabs */}
-      <View style={styles.tabSection}>
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab;
-          const count = orders.filter(
-            (o) => o.status.toLowerCase() === tab.toLowerCase()
-          ).length;
+      <View style={{ backgroundColor: '#fff' }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabSection}>
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab;
+            const count = orders.filter(
+              (o) => o.status.toLowerCase() === tab.toLowerCase()
+            ).length;
 
-          return (
-            <TouchableOpacity
-              key={tab}
-              style={[styles.tabButton, isActive && styles.tabButtonActive]}
-              onPress={() => setActiveTab(tab)}
-            >
-              <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
-                {tab}
-              </Text>
-              {count > 0 && (
-                <View style={[styles.countBadge, { backgroundColor: isActive ? '#fff' : RED }]}>
-                  <Text style={[styles.countText, { color: isActive ? RED : '#fff' }]}>
-                    {count}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
+            return (
+              <TouchableOpacity
+                key={tab}
+                style={[styles.tabButton, isActive && styles.tabButtonActive]}
+                onPress={() => setActiveTab(tab)}
+              >
+                <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+                  {tab}
+                </Text>
+                {count > 0 && (
+                  <View style={[styles.countBadge, { backgroundColor: isActive ? '#fff' : RED }]}>
+                    <Text style={[styles.countText, { color: isActive ? RED : '#fff' }]}>
+                      {count}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -179,7 +181,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   tabButton: {
-    flex: 1,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

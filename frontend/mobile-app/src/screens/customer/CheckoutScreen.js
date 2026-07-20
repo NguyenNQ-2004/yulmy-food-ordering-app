@@ -22,25 +22,6 @@ const CARD = '#fff8f7';
 const BORDER = '#f3dedc';
 const MUTED = '#6f4b4b';
 
-const ORDER_ITEMS = [
-  {
-    id: 'wagyu-truffle',
-    name: 'Wagyu Truffle Tartare',
-    description: 'Medium Rare - Extra Truffle',
-    price: 85,
-    quantity: 1,
-    image: 'https://images.unsplash.com/photo-1546069901-d5bfd2cbfb1f?w=240&h=240&fit=crop',
-  },
-  {
-    id: 'matcha-mousse',
-    name: 'Matcha Gold Mousse',
-    description: 'Contains Dairy',
-    price: 24,
-    quantity: 2,
-    image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=240&h=240&fit=crop',
-  },
-];
-
 const CHECKOUT_ADDRESS_STORAGE_KEY = 'checkout_delivery_address';
 const CHECKOUT_PAYMENT_STORAGE_KEY = 'checkout_payment_method';
 
@@ -74,7 +55,7 @@ export default function CheckoutScreen({ navigation, route }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const cartData = route?.params?.cart;
-  const orderItems = cartData?.items?.length ? cartData.items : ORDER_ITEMS;
+  const orderItems = cartData?.items || [];
   const deliveryFee = cartData?.totals?.deliveryFee ?? 1.5;
 
   useEffect(() => {

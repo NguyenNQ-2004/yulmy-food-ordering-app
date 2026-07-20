@@ -16,6 +16,8 @@ import FavoritesScreen from '../screens/customer/FavoritesScreen';
 import OrderHistoryScreen from '../screens/customer/OrderHistoryScreen';
 import ChatListScreen from '../screens/Chat/ChatListScreen';
 import ChatDetailScreen from '../screens/Chat/ChatDetailScreen';
+import ProfileScreen from '../screens/customer/ProfileScreen';
+import RateScreen from '../screens/customer/RateScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -95,6 +97,16 @@ export default function CustomerNavigator() {
       <Stack.Screen
         name="ChatDetail"
         component={ChatDetailScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Rate"
+        component={RateScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

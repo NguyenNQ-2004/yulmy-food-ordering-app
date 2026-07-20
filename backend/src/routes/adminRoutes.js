@@ -16,6 +16,8 @@ const {
   updateRestaurant,
   updateReviewStatus,
   updateUserStatus,
+  updateUserRole,
+  deleteUser,
 } = require('../controllers/adminController');
 const { adminOnly, protect } = require('../middleware/authMiddleware');
 
@@ -27,6 +29,8 @@ router.get('/dashboard', getDashboard);
 
 router.get('/users', getUsers);
 router.patch('/users/:id/status', updateUserStatus);
+router.patch('/users/:id/role', updateUserRole);
+router.delete('/users/:id', deleteUser);
 
 router.get('/restaurants', getRestaurants);
 router.post('/restaurants', createRestaurant);

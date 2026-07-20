@@ -14,6 +14,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { addItemToCart, clearCart, getMyCart, toggleFavorite, getFavorites } from '../../services/customerOrderApi';
 import { clearLocalCartItems, loadLocalCartItems } from '../../services/localCartStorage';
+import { AuthContext } from '../../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
@@ -50,6 +51,7 @@ const PAIRINGS = [
 ];
 
 export default function FoodDetailScreen({ navigation, route }) {
+  const { currentUser } = React.useContext(AuthContext);
   const passedItem = route.params?.item || {};
   
   const currentFood = {
@@ -64,6 +66,11 @@ export default function FoodDetailScreen({ navigation, route }) {
   const [cartCount, setCartCount] = useState(0);
 
   const refreshCartCount = async () => {
+    if (!currentUser) {
+      const storedItems = await loadLocalCartItems();
+      setCartCount(storedItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0));
+      return;
+    }
     try {
       const cart = await getMyCart();
       setCartCount(Number(cart?.totalItems || 0));
@@ -86,11 +93,17 @@ export default function FoodDetailScreen({ navigation, route }) {
           console.error(error);
         }
       };
-      checkFavorite();
-    }, [currentFood.id, currentFood._id])
+      if (currentUser) {
+        checkFavorite();
+      }
+    }, [currentFood.id, currentFood._id, currentUser])
   );
 
   const handleToggleFavorite = async () => {
+    if (!currentUser) {
+      navigation.navigate('Auth');
+      return;
+    }
     try {
       const result = await toggleFavorite(currentFood.id || currentFood._id, null);
       setIsFavorite(result.isFavorite);
@@ -103,6 +116,10 @@ export default function FoodDetailScreen({ navigation, route }) {
   const handleDecrease = () => setQuantity(q => Math.max(1, q - 1));
 
   const handleAddToCart = async () => {
+    if (!currentUser) {
+      navigation.navigate('Auth');
+      return;
+    }
     try {
       const cart = await addItemToCart(currentFood.id || currentFood._id, quantity);
       setCartCount(Number(cart?.totalItems || 0));

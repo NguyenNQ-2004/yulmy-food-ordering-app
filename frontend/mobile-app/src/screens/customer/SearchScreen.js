@@ -7,14 +7,18 @@ import {
   SafeAreaView,
   ScrollView,
   TextInput,
+  Pressable,
   Image,
   Alert,
+  Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 
 import { useFocusEffect } from '@react-navigation/native';
 
-import { addItemToCart, clearCart, getMyCart } from '../../services/customerOrderApi';
+import { addItemToCart, clearCart, getMyCart, getAllFoods } from '../../services/customerOrderApi';
 import { clearLocalCartItems, loadLocalCartItems } from '../../services/localCartStorage';
+import { AuthContext } from '../../context/AuthContext';
 
 const RED = '#B11226';
 const LIGHT_BG = '#fffaf9';
@@ -23,24 +27,15 @@ const GRAY = '#888';
 const RECENT_SEARCHES = ['Truffle Risotto', 'Vegan Sushi', 'Artisan Coffee'];
 const POPULAR_KEYWORDS = ['Gluten-Free', 'Spicy', 'Desserts', 'Healthy', 'Seafood'];
 
-const TRENDING_GRID = [
-  { id: '66c000000000000000000009', name: 'Matcha Crepe', restaurant: 'Maison De Sucre', price: 8.5, image: 'https://images.unsplash.com/photo-1514849302-984523450ce4?w=500&q=80' },
-  { id: '66c00000000000000000000a', name: 'Avocado Toast', restaurant: 'Verdant Kitchen', price: 11, image: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=500&q=80' }
-];
-
-const TRENDING_FEATURED = {
-  id: '66c00000000000000000000b',
-  name: 'Seared Scallops',
-  restaurant: 'Lumina Osteria',
-  price: 32,
-  image: 'https://images.unsplash.com/photo-1599321955726-e048426594af?w=500&q=80'
-};
+const { width } = Dimensions.get('window');
 
 export default function SearchScreen({ navigation }) {
+  const { currentUser } = React.useContext(AuthContext);
   const [recentSearches, setRecentSearches] = useState(['Healthy', 'Burger', 'Sushi']);
   const [searchQuery, setSearchQuery] = useState('');
   const [cartCount, setCartCount] = useState(0);
   const [addingItemId, setAddingItemId] = useState(null);
+  const [trendingFoods, setTrendingFoods] = useState([]);
 
   const refreshCartCount = async () => {
     try {
@@ -52,17 +47,33 @@ export default function SearchScreen({ navigation }) {
     }
   };
 
+  const loadTrending = async () => {
+    try {
+      const foods = await getAllFoods();
+      if (foods) {
+        setTrendingFoods(foods.slice(0, 3));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useFocusEffect(
     React.useCallback(() => {
       refreshCartCount();
+      loadTrending();
     }, [])
   );
 
   const handleAddToCart = async (item) => {
+    if (!currentUser) {
+      navigation.navigate('Auth');
+      return;
+    }
     if (addingItemId) return;
-    setAddingItemId(item.id);
+    setAddingItemId(item.id || item._id);
     try {
-      const cart = await addItemToCart(item.id, 1);
+      const cart = await addItemToCart(item.id || item._id, 1);
       setCartCount(Number(cart?.totalItems || 0));
       await clearLocalCartItems();
     } catch (error) {
@@ -79,7 +90,7 @@ export default function SearchScreen({ navigation }) {
               onPress: async () => {
                 try {
                   await clearCart();
-                  const cart = await addItemToCart(item.id, 1);
+                  const cart = await addItemToCart(item.id || item._id, 1);
                   setCartCount(Number(cart?.totalItems || 0));
                   await clearLocalCartItems();
                 } catch (replaceError) {
@@ -144,7 +155,7 @@ export default function SearchScreen({ navigation }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent Searches</Text>
           {RECENT_SEARCHES.map((item, index) => (
-            <View key={index} style={styles.recentItem}>
+            <TouchableOpacity key={index} style={styles.recentItem} onPress={() => setSearchQuery(item)}>
               <View style={styles.recentLeft}>
                 <Text style={styles.clockIcon}>🕒</Text>
                 <Text style={styles.recentText}>{item}</Text>
@@ -152,7 +163,7 @@ export default function SearchScreen({ navigation }) {
               <TouchableOpacity>
                 <Text style={styles.closeIcon}>✕</Text>
               </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
 
@@ -161,7 +172,7 @@ export default function SearchScreen({ navigation }) {
           <Text style={styles.sectionTitle}>Popular Keywords</Text>
           <View style={styles.keywordsContainer}>
             {POPULAR_KEYWORDS.map((item, index) => (
-              <TouchableOpacity key={index} style={styles.keywordPill}>
+              <TouchableOpacity key={index} style={styles.keywordPill} onPress={() => setSearchQuery(item)}>
                 <Text style={styles.keywordText}>{item}</Text>
               </TouchableOpacity>
             ))}
@@ -173,50 +184,60 @@ export default function SearchScreen({ navigation }) {
           <Text style={styles.sectionTitle}>Trending Now</Text>
           
           <View style={styles.trendingGrid}>
-            {TRENDING_GRID.map((item) => (
-              <TouchableOpacity key={item.id} style={styles.trendingCard} onPress={() => navigation.navigate('FoodDetail', { item })}>
+            {trendingFoods.slice(0, 2).map((item) => (
+              <Pressable key={item.id || item._id} style={styles.trendingCard} onPress={() => navigation.navigate('FoodDetail', { item })}>
                 <Image source={{ uri: item.image }} style={styles.trendingImage} />
                 <View style={styles.trendingInfo}>
                   <Text style={styles.trendingName} numberOfLines={1}>{item.name}</Text>
-                  <Text style={styles.trendingRest}>{item.restaurant}</Text>
+                  <Text style={styles.trendingRest}>{item.restaurant?.name || 'Restaurant'}</Text>
                   <View style={styles.trendingBottom}>
                     <Text style={styles.trendingPrice}>${item.price}</Text>
                     <TouchableOpacity 
-                      style={[styles.addButtonLite, addingItemId === item.id && { opacity: 0.5 }]} 
+                      style={[styles.addButtonLite, !!addingItemId && { opacity: 0.5 }]} 
                       onPress={() => handleAddToCart(item)}
-                      disabled={addingItemId === item.id}
+                      disabled={!!addingItemId}
                     >
-                      <Text style={styles.addButtonLiteText}>+</Text>
+                      {addingItemId === (item.id || item._id) ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Text style={styles.addButtonLiteText}>+</Text>
+                      )}
                     </TouchableOpacity>
                   </View>
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
 
           {/* Featured Item */}
-          <TouchableOpacity style={styles.featuredCard} onPress={() => navigation.navigate('FoodDetail', { item: TRENDING_FEATURED })}>
-            <Image source={{ uri: TRENDING_FEATURED.image }} style={styles.featuredImage} />
-            <View style={styles.featuredTag}>
-              <Text style={styles.featuredTagText}>Featured</Text>
-            </View>
-            <View style={styles.featuredInfo}>
-              <View style={{flex: 1}}>
-                <Text style={styles.featuredName}>{TRENDING_FEATURED.name}</Text>
-                <Text style={styles.trendingRest}>{TRENDING_FEATURED.restaurant}</Text>
+          {trendingFoods.length > 2 && (
+            <Pressable style={styles.featuredCard} onPress={() => navigation.navigate('FoodDetail', { item: trendingFoods[2] })}>
+              <Image source={{ uri: trendingFoods[2].image }} style={styles.featuredImage} />
+              <View style={styles.featuredTag}>
+                <Text style={styles.featuredTagText}>Featured</Text>
               </View>
-              <View style={styles.featuredBottom}>
-                <Text style={styles.featuredPrice}>${TRENDING_FEATURED.price}</Text>
-                <TouchableOpacity 
-                  style={[styles.addButtonDark, addingItemId === TRENDING_FEATURED.id && { opacity: 0.5 }]} 
-                  onPress={() => handleAddToCart(TRENDING_FEATURED)}
-                  disabled={addingItemId === TRENDING_FEATURED.id}
-                >
-                  <Text style={styles.addButtonDarkText}>+</Text>
-                </TouchableOpacity>
+              <View style={styles.featuredInfo}>
+                <View style={{flex: 1}}>
+                  <Text style={styles.featuredName}>{trendingFoods[2].name}</Text>
+                  <Text style={styles.trendingRest}>{trendingFoods[2].restaurant?.name || 'Restaurant'}</Text>
+                </View>
+                <View style={styles.featuredBottom}>
+                  <Text style={styles.featuredPrice}>${trendingFoods[2].price}</Text>
+                  <TouchableOpacity 
+                    style={[styles.addButtonDark, !!addingItemId && { opacity: 0.5 }]} 
+                    onPress={() => handleAddToCart(trendingFoods[2])}
+                    disabled={!!addingItemId}
+                  >
+                    {addingItemId === (trendingFoods[2].id || trendingFoods[2]._id) ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.addButtonDarkText}>+</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          </TouchableOpacity>
+            </Pressable>
+          )}
 
         </View>
 
@@ -233,17 +254,17 @@ export default function SearchScreen({ navigation }) {
            <Text style={[styles.navIcon, {color: RED}]}>🔍</Text>
            <Text style={[styles.navLabel, {color: RED}]}>Search</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Favorites')}>
+        <TouchableOpacity style={styles.navItem} onPress={() => currentUser ? navigation.navigate('Favorites') : navigation.navigate('Auth')}>
           <Text style={styles.navIcon}>♥</Text>
           <Text style={styles.navLabel}>Favorites</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('OrderHistory')}>
+        <TouchableOpacity style={styles.navItem} onPress={() => currentUser ? navigation.navigate('OrderHistory') : navigation.navigate('Auth')}>
           <Text style={styles.navIcon}>📋</Text>
           <Text style={styles.navLabel}>Orders</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-           <Text style={styles.navIcon}>👤</Text>
-           <Text style={styles.navLabel}>Profile</Text>
+        <TouchableOpacity style={styles.navItem} onPress={() => currentUser ? navigation.navigate('Profile') : navigation.navigate('Auth')}>
+          <Text style={styles.navIcon}>👤</Text>
+          <Text style={styles.navLabel}>Profile</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

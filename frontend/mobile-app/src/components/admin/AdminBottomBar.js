@@ -8,9 +8,9 @@ const MUTED = '#7c7d85';
 
 const TABS = [
   { key: 'dashboard', label: 'Dashboard', icon: 'DB', screen: 'AdminDashboard' },
-  { key: 'orders', label: 'Orders', icon: 'OR', screen: 'AdminOrders' },
-  { key: 'foods', label: 'Foods', icon: 'FD', screen: 'AdminFoods' },
   { key: 'users', label: 'Users', icon: 'US', screen: 'AdminUsers' },
+  { key: 'restaurants', label: 'Shops', icon: 'RS', screen: 'AdminRestaurants' },
+  { key: 'reviews', label: 'Reviews', icon: 'RV', screen: 'AdminReviews' },
   { key: 'settings', label: 'Settings', icon: 'ST', screen: 'AdminSettings' },
 ];
 

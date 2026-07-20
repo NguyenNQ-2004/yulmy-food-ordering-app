@@ -330,6 +330,22 @@ export function AdminProvider({ children }) {
     );
   };
 
+  const updateUserRole = async (userId, newRole) => {
+    const response = await api.patch(`/admin/users/${userId}/role`, {
+      role: newRole,
+    });
+
+    const updatedUser = normalizeUser(response.data.data);
+    setUsers((currentUsers) =>
+      currentUsers.map((user) => (user.id === userId ? updatedUser : user))
+    );
+  };
+
+  const deleteUser = async (userId) => {
+    await api.delete(`/admin/users/${userId}`);
+    setUsers((currentUsers) => currentUsers.filter((user) => user.id !== userId));
+  };
+
   const updateOrderStatus = async (orderId, orderStatus) => {
     await api.patch(`/admin/orders/${orderId}/status`, { orderStatus });
     await Promise.all([loadOrders(), loadDashboard()]);
@@ -366,6 +382,8 @@ export function AdminProvider({ children }) {
       updateRestaurant,
       deleteRestaurant,
       toggleUserStatus,
+      updateUserRole,
+      deleteUser,
       updateOrderStatus,
       updateReviewStatus,
     }),

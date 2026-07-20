@@ -183,25 +183,29 @@ export default function AdminReviewsScreen({ navigation }) {
                 </View>
 
                 <View style={styles.actionsRow}>
-                  <TouchableOpacity
-                    style={[styles.actionButton, styles.actionPrimary]}
-                    onPress={() => handleReviewAction(review, 'approved')}
-                  >
-                    <Text style={styles.actionPrimaryText}>Approve</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.actionButton, styles.actionMuted]}
-                    onPress={() => handleReviewAction(review, 'hidden')}
-                  >
-                    <Text style={styles.actionMutedText}>Hide</Text>
-                  </TouchableOpacity>
+                  {review.status !== 'approved' && (
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.actionPrimary]}
+                      onPress={() => handleReviewAction(review, 'approved')}
+                    >
+                      <Text style={styles.actionPrimaryText}>Approve</Text>
+                    </TouchableOpacity>
+                  )}
+                  {review.status !== 'hidden' && (
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.actionMuted]}
+                      onPress={() => handleReviewAction(review, 'hidden')}
+                    >
+                      <Text style={styles.actionMutedText}>Hide</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             </View>
           ))}
         </ScrollView>
 
-        <AdminBottomBar activeTab="dashboard" navigation={navigation} />
+        <AdminBottomBar activeTab="reviews" navigation={navigation} />
       </View>
     </SafeAreaView>
   );

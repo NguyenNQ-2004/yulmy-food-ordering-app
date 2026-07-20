@@ -197,6 +197,73 @@ const updateUserStatus = async (req, res) => {
   }
 };
 
+const updateUserRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    if (!['customer', 'restaurant_owner', 'admin'].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role',
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      id,
+      { role },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update user role',
+      error: error.message,
+    });
+  }
+};
+
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (user.role === 'admin') {
+      return res.status(403).json({ success: false, message: 'Cannot delete an admin account' });
+    }
+
+    // You could also delete related records like orders, reviews, etc. here if necessary.
+    await User.findByIdAndDelete(id);
+
+    return res.json({
+      success: true,
+      message: 'User deleted successfully',
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to delete user',
+      error: error.message,
+    });
+  }
+};
+
 const getRestaurants = async (req, res) => {
   try {
     const { q = '', status = 'all' } = req.query;
@@ -729,6 +796,8 @@ module.exports = {
   getDashboard,
   getUsers,
   updateUserStatus,
+  updateUserRole,
+  deleteUser,
   getRestaurants,
   createRestaurant,
   updateRestaurant,

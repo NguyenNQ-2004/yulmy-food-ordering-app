@@ -549,36 +549,7 @@ const seedData = async () => {
 
     console.log('✅ Vouchers seeded');
 
-    // ──────────────────────────────────────
-    // 7. CART (Duy)
-    // ──────────────────────────────────────
-    await Cart.create({
-      _id: IDS.cartCustomer,
-      user: IDS.customer,
-      restaurant: IDS.restaurantChicken,
-      items: [
-        {
-          food: IDS.friedChicken,
-          name: 'Fried Chicken',
-          image: IMAGES.friedChicken,
-          quantity: 2,
-          price: 4.5,
-          subtotal: 9,
-        },
-        {
-          food: IDS.chickenBurger,
-          name: 'Chicken Burger',
-          image: IMAGES.chickenBurger,
-          quantity: 1,
-          price: 5.5,
-          subtotal: 5.5,
-        },
-      ],
-      totalItems: 3,
-      totalAmount: 14.5,
-    });
-
-    console.log('✅ Cart seeded');
+    // Cart is intentionally left empty on seed so users start fresh
 
     console.log('\n🎉 All seed data imported successfully!');
     console.log('──────────────────────────────────────');

@@ -12,7 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getFavorites, toggleFavorite, addItemToCart } from '../../services/customerOrderApi';
+import { getFavorites, toggleFavorite, addItemToCart, clearCart } from '../../services/customerOrderApi';
 
 const RED = '#B11226';
 const LIGHT_BG = '#fffaf9';
@@ -23,6 +23,7 @@ export default function FavoritesScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState('Dishes');
   const [favorites, setFavorites] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [addingItemId, setAddingItemId] = useState(null);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -52,11 +53,39 @@ export default function FavoritesScreen({ navigation }) {
   };
 
   const handleAddToCart = async (foodId) => {
+    if (addingItemId) return;
+    setAddingItemId(foodId);
     try {
       await addItemToCart(foodId, 1);
       Alert.alert('Success', 'Added to cart!');
     } catch (error) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to add');
+      const message = error.response?.data?.message || 'Failed to add';
+      if (message === 'Cart already contains items from another restaurant') {
+        Alert.alert(
+          'Replace cart?',
+          'Your cart has items from another restaurant. Replace it with this item?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Replace',
+              style: 'destructive',
+              onPress: async () => {
+                try {
+                  await clearCart();
+                  await addItemToCart(foodId, 1);
+                  Alert.alert('Success', 'Added to cart!');
+                } catch (replaceError) {
+                  Alert.alert('Error', replaceError.response?.data?.message || 'Failed to add');
+                }
+              },
+            },
+          ]
+        );
+        return;
+      }
+      Alert.alert('Error', message);
+    } finally {
+      setAddingItemId(null);
     }
   };
 
@@ -134,10 +163,15 @@ export default function FavoritesScreen({ navigation }) {
                   <View style={styles.cardFooter}>
                     <Text style={styles.restaurantName}>{item.restaurant?.name || 'Restaurant'}</Text>
                     <TouchableOpacity 
-                      style={styles.addBtn}
+                      style={[styles.addBtn, !!addingItemId && { opacity: 0.5 }]}
                       onPress={() => handleAddToCart(food._id)}
+                      disabled={!!addingItemId}
                     >
-                      <Text style={styles.addBtnText}>+</Text>
+                      {addingItemId === food._id ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Text style={styles.addBtnText}>+</Text>
+                      )}
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -201,7 +235,7 @@ export default function FavoritesScreen({ navigation }) {
           <Text style={styles.navIcon}>📋</Text>
           <Text style={styles.navLabel}>Orders</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Profile')}>
           <Text style={styles.navIcon}>👤</Text>
           <Text style={styles.navLabel}>Profile</Text>
         </TouchableOpacity>

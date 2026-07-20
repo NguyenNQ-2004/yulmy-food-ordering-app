@@ -86,6 +86,17 @@ const orderSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+    },
+
+    review: {
+      type: String,
+      trim: true,
+    },
   },
   {
     timestamps: true,

@@ -8,6 +8,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Platform,
 } from 'react-native';
 
 import AdminBottomBar from '../../components/admin/AdminBottomBar';
@@ -32,7 +33,7 @@ const ROLE_LABELS = {
 
 export default function AdminUsersScreen({ navigation }) {
   const { currentUser, confirmLogout } = useContext(AuthContext);
-  const { users, toggleUserStatus, error, loading } = useContext(AdminContext);
+  const { users, toggleUserStatus, updateUserRole, deleteUser, error, loading } = useContext(AdminContext);
   const [keyword, setKeyword] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
 
@@ -74,6 +75,11 @@ export default function AdminUsersScreen({ navigation }) {
     const nextAction = user.status === 'active' ? 'Block' : 'Unblock';
     const nextStatus = user.status === 'active' ? 'blocked' : 'active';
 
+    if (Platform.OS === 'web') {
+      toggleUserStatus(user.id, nextStatus).catch(() => {});
+      return;
+    }
+
     Alert.alert(
       `${nextAction} User`,
       `${nextAction} ${user.fullName} (${ROLE_LABELS[user.role] || user.role})?`,
@@ -96,6 +102,60 @@ export default function AdminUsersScreen({ navigation }) {
         },
       ]
     );
+  };
+
+  const handleDelete = (user) => {
+    if (user.email === currentUser?.email || user.role === 'admin') {
+      const msg = 'You cannot delete yourself or other administrators.';
+      if (Platform.OS === 'web') { window.alert('Action Denied\n' + msg); }
+      else { Alert.alert('Action Denied', msg); }
+      return;
+    }
+
+    if (Platform.OS === 'web') {
+      deleteUser(user.id).catch(() => {});
+      return;
+    }
+
+    Alert.alert(
+      'Delete User',
+      `Are you sure you want to permanently delete ${user.fullName}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteUser(user.id);
+            } catch (err) {
+              const msg = err.response?.data?.message || 'Could not delete user.';
+              Alert.alert('Delete Failed', msg);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleChangeRole = async (user) => {
+    if (user.email === currentUser?.email) {
+      if (Platform.OS === 'web') { window.alert('Action Denied\nYou cannot change your own role.'); }
+      else { Alert.alert('Action Denied', 'You cannot change your own role.'); }
+      return;
+    }
+
+    const roles = ['customer', 'restaurant_owner', 'admin'];
+    const currentIndex = roles.indexOf(user.role);
+    const nextRole = roles[(currentIndex + 1) % roles.length];
+    
+    try {
+      await updateUserRole(user.id, nextRole);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Update failed. Did you restart the backend?';
+      if (Platform.OS === 'web') { window.alert('Error\n' + msg); }
+      else { Alert.alert('Error', msg); }
+    }
   };
 
   const showUserDetails = (user) => {
@@ -223,11 +283,20 @@ export default function AdminUsersScreen({ navigation }) {
 
               <View style={styles.userActions}>
                 <TouchableOpacity
+                  style={[styles.actionButton, styles.actionMuted, { marginRight: 'auto' }]}
+                  activeOpacity={0.85}
+                  onPress={() => handleChangeRole(user)}
+                >
+                  <Text style={styles.actionMutedText}>Role</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
                   style={[
                     styles.actionButton,
                     user.status === 'active'
                       ? styles.actionDanger
                       : styles.actionNeutral,
+                    { marginLeft: 8 }
                   ]}
                   activeOpacity={0.85}
                   onPress={() => handleToggleStatus(user)}
@@ -245,12 +314,22 @@ export default function AdminUsersScreen({ navigation }) {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.actionButton, styles.actionPrimary]}
+                  style={[styles.actionButton, styles.actionPrimary, { marginLeft: 8 }]}
                   activeOpacity={0.85}
                   onPress={() => showUserDetails(user)}
                 >
                   <Text style={[styles.actionButtonText, styles.actionPrimaryText]}>
                     Details
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.actionDanger, { marginLeft: 8 }]}
+                  activeOpacity={0.85}
+                  onPress={() => handleDelete(user)}
+                >
+                  <Text style={[styles.actionButtonText, styles.actionDangerText]}>
+                    Delete
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -465,7 +544,7 @@ const styles = StyleSheet.create({
   userActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 8,
+    flexWrap: 'wrap',
   },
   actionButton: {
     borderRadius: 999,

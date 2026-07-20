@@ -12,7 +12,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getMyOrders } from '../../services/customerOrderApi';
+import { getMyOrders, clearCart, addItemToCart } from '../../services/customerOrderApi';
+import { Alert } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -62,6 +63,25 @@ export default function OrderHistoryScreen({ navigation }) {
 
   const getStatusText = (status) => {
     return status;
+  };
+
+  const handleReorder = async (order) => {
+    try {
+      setIsLoading(true);
+      await clearCart();
+      for (const item of order.items) {
+        if (item.food) {
+          await addItemToCart(item.food._id || item.food, item.quantity);
+        }
+      }
+      navigation.navigate('Cart');
+    } catch (error) {
+      console.log('Reorder error:', error);
+      const message = error.response?.data?.message || 'Failed to reorder items. Some items might be unavailable.';
+      Alert.alert('Cannot Reorder', message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Filter orders based on tabs
@@ -130,19 +150,28 @@ export default function OrderHistoryScreen({ navigation }) {
 
         {activeTab === 'Active' && (
           <View style={styles.cardFooter}>
-            <TouchableOpacity style={styles.trackButton}>
+            <TouchableOpacity style={styles.trackButton} onPress={() => navigation.navigate('OrderSuccess', { orderPayload: { order } })}>
               <Text style={styles.trackButtonText}>Track Order</Text>
             </TouchableOpacity>
           </View>
         )}
         {activeTab === 'Completed' && (
           <View style={styles.cardFooter}>
-            <TouchableOpacity style={styles.reorderButton}>
+            <TouchableOpacity style={styles.reorderButton} onPress={() => handleReorder(order)}>
               <Text style={styles.reorderButtonText}>Reorder</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.rateButton}>
-              <Text style={styles.rateButtonText}>Rate</Text>
-            </TouchableOpacity>
+            {!order.rating ? (
+              <TouchableOpacity 
+                style={styles.rateButton}
+                onPress={() => navigation.navigate('Rate', { order })}
+              >
+                <Text style={styles.rateButtonText}>Rate</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={[styles.rateButton, { backgroundColor: '#f2f2f2', borderColor: '#e6e6e6' }]}>
+                <Text style={[styles.rateButtonText, { color: '#888' }]}>Rated ★ {order.rating}</Text>
+              </View>
+            )}
           </View>
         )}
       </TouchableOpacity>
@@ -231,7 +260,7 @@ export default function OrderHistoryScreen({ navigation }) {
           <Text style={[styles.navIcon, styles.navActiveIcon]}>📋</Text>
           <Text style={styles.navActiveText}>Orders</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Profile')}>
           <Text style={styles.navIcon}>👤</Text>
           <Text style={styles.navLabel}>Profile</Text>
         </TouchableOpacity>

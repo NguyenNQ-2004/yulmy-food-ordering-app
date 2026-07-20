@@ -7,14 +7,16 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  Pressable,
   View,
   Image,
   Platform,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 
 import { AuthContext } from '../../context/AuthContext';
-import { addItemToCart, clearCart, getMyCart } from '../../services/customerOrderApi';
+import { addItemToCart, clearCart, getMyCart, getRestaurants, getAllFoods } from '../../services/customerOrderApi';
 import { clearLocalCartItems, loadLocalCartItems } from '../../services/localCartStorage';
 
 const RED = '#B11226';
@@ -22,56 +24,6 @@ const LIGHT_BG = '#fffaf9';
 const GRAY = '#888';
 
 const CATEGORIES = ['Featured', 'Vegan', 'Gluten-Free', 'Sushi', 'Burger'];
-const POPULAR_RESTAURANTS = [
-  { id: '66b000000000000000000005', name: 'Akira Omakase', category: 'Japanese', price: '$$$$', rating: 4.9, time: '30-45 min', color: '#e8c9b8', image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=500&q=80' },
-  { id: '66b000000000000000000004', name: 'Lumina Osteria', category: 'Italian', price: '$$', rating: 4.8, time: '20-30 min', color: '#e0c090', image: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=500&q=80' },
-];
-
-const RECOMMENDED = [
-  {
-    id: '66c000000000000000000002',
-    name: 'Chicken Burger',
-    restaurant: 'Yulmy Chicken',
-    price: 5.5,
-    color: '#f0d9db',
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&q=80',
-    category: 'Burger'
-  },
-  {
-    id: '66c000000000000000000001',
-    name: 'Fried Chicken',
-    restaurant: 'Yulmy Chicken',
-    price: 4.5,
-    color: '#d9e5d6',
-    image: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=500&q=80',
-    category: 'Featured'
-  },
-  {
-    id: '66c000000000000000000003',
-    name: 'Chicken Rice',
-    restaurant: 'Com Ngon Corner',
-    price: 5,
-    color: '#e6e6e6',
-    image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&q=80',
-    category: 'Featured'
-  },
-  {
-    id: '66c000000000000000000004',
-    name: 'Beef Noodle Soup',
-    restaurant: 'Noodle House',
-    price: 6,
-    color: '#ebd8c3',
-    image: 'https://images.unsplash.com/photo-1557872943-16a5ac26437e?w=500&q=80',
-    category: 'Gluten-Free'
-  },
-  { id: '66c000000000000000000005', name: 'Truffle Mushroom Risotto', restaurant: 'Lumina Osteria', price: 28.00, color: '#e8c9b8', image: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=500&q=80', category: 'Vegan' },
-  { id: '66c000000000000000000006', name: 'Spicy Tuna Roll', restaurant: 'Akira Omakase', price: 15.00, color: '#f0d9db', image: 'https://images.unsplash.com/photo-1553621042-f6e147245754?w=500&q=80', category: 'Sushi' },
-  { id: '66c000000000000000000007', name: 'Vegan Buddha Bowl', restaurant: 'Verdant Kitchen', price: 12.00, color: '#d9e5d6', image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&q=80', category: 'Vegan' },
-  { id: '66c000000000000000000008', name: 'Chocolate Lava Cake', restaurant: 'Maison De Sucre', price: 9.00, color: '#e6e6e6', image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&q=80', category: 'Dessert' },
-  { id: '66c000000000000000000009', name: 'Matcha Crepe', restaurant: 'Maison De Sucre', price: 8.50, color: '#d9e5d6', image: 'https://images.unsplash.com/photo-1514849302-984523450ce4?w=500&q=80', category: 'Dessert' },
-  { id: '66c00000000000000000000a', name: 'Avocado Toast', restaurant: 'Verdant Kitchen', price: 11.00, color: '#e8c9b8', image: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=500&q=80', category: 'Vegan' },
-  { id: '66c00000000000000000000b', name: 'Seared Scallops', restaurant: 'Lumina Osteria', price: 32.00, color: '#ebd8c3', image: 'https://images.unsplash.com/photo-1599321955726-e048426594af?w=500&q=80', category: 'Featured' },
-];
 
 function formatMoney(value) {
   return `$${value.toFixed(2)}`;
@@ -86,8 +38,21 @@ export default function HomeScreen({ navigation }) {
   const [localCartItems, setLocalCartItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [addingItemId, setAddingItemId] = useState(null);
+  
+  const [popularRestaurants, setPopularRestaurants] = useState([]);
+  const [recommendedFoods, setRecommendedFoods] = useState([]);
+
+  const formatMoney = (amount) => {
+    return `$${Number(amount || 0).toFixed(2)}`;
+  };
 
   const refreshCartCount = async () => {
+    if (!currentUser) {
+      const storedItems = await loadLocalCartItems();
+      setLocalCartItems(storedItems);
+      setCartCount(storedItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0));
+      return;
+    }
     try {
       const cart = await getMyCart();
       setCartCount(Number(cart?.totalItems || 0));
@@ -100,11 +65,25 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
+  const fetchDynamicData = async () => {
+    try {
+      const [restData, foodData] = await Promise.all([
+        getRestaurants(),
+        getAllFoods(),
+      ]);
+      setPopularRestaurants(restData || []);
+      setRecommendedFoods(foodData || []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
 
     const restoreCart = async () => {
       await refreshCartCount();
+      await fetchDynamicData();
 
       if (!isMounted) {
         return;
@@ -119,12 +98,19 @@ export default function HomeScreen({ navigation }) {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', refreshCartCount);
+    const unsubscribe = navigation.addListener('focus', () => {
+      refreshCartCount();
+      fetchDynamicData();
+    });
 
     return unsubscribe;
   }, [navigation]);
 
   const handleAvatarPress = () => {
+    if (!currentUser) {
+      navigation.navigate('Auth');
+      return;
+    }
     setShowProfileMenu((prev) => !prev);
   };
 
@@ -134,23 +120,31 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleOpenCart = () => {
+    if (!currentUser) {
+      navigation.navigate('Auth');
+      return;
+    }
     navigation.navigate('Cart');
   };
 
   const addBackendCartItem = async (item) => {
-    const cart = await addItemToCart(item.id, 1);
+    const cart = await addItemToCart(item.id || item._id, 1);
     setCartCount(Number(cart?.totalItems || 0));
     await clearLocalCartItems();
   };
 
   const handleAddToCart = async (item) => {
+    if (!currentUser) {
+      navigation.navigate('Auth');
+      return;
+    }
     if (addingItemId) return;
-    setAddingItemId(item.id);
+    setAddingItemId(item.id || item._id);
     try {
       await addBackendCartItem(item);
     } catch (error) {
       const message = error.response?.data?.message || 'Cannot add this item to cart.';
-
+      
       if (message === 'Cart already contains items from another restaurant') {
         Alert.alert(
           'Replace cart?',
@@ -165,10 +159,7 @@ export default function HomeScreen({ navigation }) {
                   await clearCart();
                   await addBackendCartItem(item);
                 } catch (replaceError) {
-                  Alert.alert(
-                    'Add to cart failed',
-                    replaceError.response?.data?.message || 'Cannot add this item to cart.'
-                  );
+                  Alert.alert('Add to cart failed', replaceError.response?.data?.message || 'Cannot add this item to cart.');
                 }
               },
             },
@@ -178,12 +169,14 @@ export default function HomeScreen({ navigation }) {
       }
 
       Alert.alert('Add to cart failed', message);
+    } finally {
+      setAddingItemId(null);
     }
   };
 
-  const firstName = currentUser?.fullName ? currentUser.fullName.split(' ')[0] : 'Alex';
+  const firstName = currentUser?.fullName ? currentUser.fullName.split(' ')[0] : 'Guest';
 
-  const filteredPopular = POPULAR_RESTAURANTS.filter(item => {
+  const filteredPopular = popularRestaurants.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
       (item.category && item.category.toLowerCase().includes(searchQuery.toLowerCase()));
     
@@ -194,13 +187,13 @@ export default function HomeScreen({ navigation }) {
     return matchesSearch && matchesCategory;
   });
 
-  const filteredRecommended = RECOMMENDED.filter(item => {
+  const filteredRecommended = recommendedFoods.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      (item.restaurant && item.restaurant.toLowerCase().includes(searchQuery.toLowerCase()));
+      (item.restaurant?.name && item.restaurant.name.toLowerCase().includes(searchQuery.toLowerCase()));
     
     const matchesCategory = activeCategory === 'Featured' || 
       item.name.toLowerCase().includes(activeCategory.toLowerCase()) || 
-      (item.restaurant && item.restaurant.toLowerCase().includes(activeCategory.toLowerCase())) ||
+      (item.restaurant?.name && item.restaurant.name.toLowerCase().includes(activeCategory.toLowerCase())) ||
       (item.category && item.category.toLowerCase().includes(activeCategory.toLowerCase()));
 
     return matchesSearch && matchesCategory;
@@ -303,9 +296,9 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalList}>
-          {filteredPopular.length > 0 ? filteredPopular.map((item) => (
-            <TouchableOpacity 
-              key={item.id} 
+          {filteredPopular.length > 0 ? filteredPopular.map((item, index) => (
+            <Pressable 
+              key={item.id || item._id || index} 
               style={styles.restaurantCard} 
               onPress={() => {
                 setShowProfileMenu(false);
@@ -314,29 +307,29 @@ export default function HomeScreen({ navigation }) {
             >
               <View style={[styles.restaurantImagePlaceholder, { backgroundColor: item.color, overflow: 'hidden' }]}>
                 {item.image && <Image source={{uri: item.image}} style={StyleSheet.absoluteFillObject} />}
-                <TouchableOpacity style={styles.heartIcon}>
-                  <Text>{'\u2661'}</Text>
-                </TouchableOpacity>
+                <View style={styles.heartIcon}>
+                  <Text>{'♡'}</Text>
+                </View>
               </View>
               <View style={styles.restaurantInfo}>
                 <Text style={styles.restaurantName}>{item.name}</Text>
                 <Text style={styles.restaurantMeta}>
-                  {item.category} {'\u2022'} {item.price}
+                  {item.category || 'Food'} {'\u2022'} {item.price || '$$'}
                 </Text>
                 <Text style={styles.restaurantRating}>
-                  {'\u2605'} {item.rating} {'   '}
-                  {'\u23F0'} {item.time}
+                  {'\u2605'} {item.rating || 4.5} {'   '}
+                  {'\u23F0'} {item.deliveryTime || item.time || '20-30 min'}
                 </Text>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           )) : <Text style={{marginLeft: 20, color: GRAY}}>No restaurants found.</Text>}
         </ScrollView>
 
         <Text style={styles.recommendedTitle}>Recommended for You</Text>
         <View style={styles.recommendedGrid}>
-          {filteredRecommended.length > 0 ? filteredRecommended.map((item) => (
-            <TouchableOpacity 
-              key={item.id} 
+          {filteredRecommended.length > 0 ? filteredRecommended.map((item, index) => (
+            <Pressable 
+              key={item.id || item._id || index} 
               style={styles.recommendedCard} 
               onPress={() => {
                 setShowProfileMenu(false);
@@ -348,22 +341,26 @@ export default function HomeScreen({ navigation }) {
                </View>
                <View style={styles.recommendedInfo}>
                  <Text style={styles.recommendedName} numberOfLines={2}>{item.name}</Text>
-                 <Text style={styles.recommendedRest}>{item.restaurant}</Text>
+                 <Text style={styles.recommendedRest}>{item.restaurant?.name || 'Restaurant'}</Text>
                  <View style={styles.recommendedBottom}>
                    <Text style={styles.recommendedPrice}>{formatMoney(item.price)}</Text>
                    <TouchableOpacity 
-                     style={[styles.addButton, addingItemId === item.id && { opacity: 0.5 }]} 
+                     style={[styles.addButton, !!addingItemId && { opacity: 0.5 }]} 
                      onPress={() => {
                        setShowProfileMenu(false);
                        handleAddToCart(item);
                      }}
-                     disabled={addingItemId === item.id}
+                     disabled={!!addingItemId}
                    >
-                     <Text style={styles.addButtonText}>+</Text>
+                     {addingItemId === (item.id || item._id) ? (
+                       <ActivityIndicator size="small" color="#fff" />
+                     ) : (
+                       <Text style={styles.addButtonText}>+</Text>
+                     )}
                    </TouchableOpacity>
                  </View>
                </View>
-            </TouchableOpacity>
+            </Pressable>
           )) : <Text style={{marginLeft: 20, color: GRAY}}>No dishes found.</Text>}
         </View>
 
@@ -372,23 +369,23 @@ export default function HomeScreen({ navigation }) {
 
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem}>
-          <Text style={[styles.navIcon, styles.navActive]}>{'\uD83C\uDFE0'}</Text>
+          <Text style={[styles.navIcon, styles.navActive]}>{'🏠'}</Text>
           <Text style={[styles.navLabel, styles.navActive]}>Home</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Search')}>
-          <Text style={styles.navIcon}>{'\uD83D\uDD0D'}</Text>
+          <Text style={styles.navIcon}>{'🔍'}</Text>
           <Text style={styles.navLabel}>Search</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Favorites')}>
+        <TouchableOpacity style={styles.navItem} onPress={() => currentUser ? navigation.navigate('Favorites') : navigation.navigate('Auth')}>
           <Text style={styles.navIcon}>♥</Text>
           <Text style={styles.navLabel}>Favorites</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('OrderHistory')}>
+        <TouchableOpacity style={styles.navItem} onPress={() => currentUser ? navigation.navigate('OrderHistory') : navigation.navigate('Auth')}>
           <Text style={styles.navIcon}>📋</Text>
           <Text style={styles.navLabel}>Orders</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem} onPress={handleAvatarPress}>
-          <Text style={styles.navIcon}>{'\uD83D\uDC64'}</Text>
+        <TouchableOpacity style={styles.navItem} onPress={() => currentUser ? navigation.navigate('Profile') : navigation.navigate('Auth')}>
+          <Text style={styles.navIcon}>{'👤'}</Text>
           <Text style={styles.navLabel}>Profile</Text>
         </TouchableOpacity>
       </View>

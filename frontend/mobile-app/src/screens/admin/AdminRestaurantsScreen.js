@@ -9,6 +9,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Platform,
 } from 'react-native';
 
 import AdminBottomBar from '../../components/admin/AdminBottomBar';
@@ -30,6 +31,7 @@ export default function AdminRestaurantsScreen({ navigation }) {
   const { restaurants, deleteRestaurant, error, loading } = useContext(AdminContext);
   const [keyword, setKeyword] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
+  const [deleteError, setDeleteError] = useState('');
 
   const avatarLabel = currentUser?.fullName
     ? currentUser.fullName
@@ -67,6 +69,14 @@ export default function AdminRestaurantsScreen({ navigation }) {
   };
 
   const handleDelete = (restaurantId, restaurantName) => {
+    setDeleteError('');
+    if (Platform.OS === 'web') {
+      deleteRestaurant(restaurantId).catch((requestError) => {
+        setDeleteError(requestError.response?.data?.message || 'Could not delete this restaurant.');
+      });
+      return;
+    }
+
     Alert.alert(
       'Delete Restaurant',
       `Delete "${restaurantName}" and its foods from the system?`,
@@ -79,11 +89,7 @@ export default function AdminRestaurantsScreen({ navigation }) {
             try {
               await deleteRestaurant(restaurantId);
             } catch (requestError) {
-              Alert.alert(
-                'Delete Failed',
-                requestError.response?.data?.message ||
-                  'Could not delete this restaurant.'
-              );
+              setDeleteError(requestError.response?.data?.message || 'Could not delete this restaurant.');
             }
           },
         },
@@ -110,6 +116,9 @@ export default function AdminRestaurantsScreen({ navigation }) {
           </Text>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {deleteError ? (
+            <Text style={{ color: RED, fontWeight: 'bold', marginBottom: 12 }}>Error: {deleteError}</Text>
+          ) : null}
 
           <View style={styles.searchBox}>
             <Text style={styles.searchPrefix}>Q</Text>
@@ -229,7 +238,7 @@ export default function AdminRestaurantsScreen({ navigation }) {
           <Text style={styles.addButtonText}>+</Text>
         </TouchableOpacity>
 
-        <AdminBottomBar activeTab="dashboard" navigation={navigation} />
+        <AdminBottomBar activeTab="restaurants" navigation={navigation} />
       </View>
     </SafeAreaView>
   );
